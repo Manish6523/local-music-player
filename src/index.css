@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+} */
+
+/* /* custom variables */
+
+:root {
+  --border: #073a37;
+  --secondary-color: #191414;
+  --text-color: #ffffff;
+}
