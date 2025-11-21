@@ -6,6 +6,7 @@ import {
   useParams,
   useNavigate,
   Link,
+  useLocation, // Added useLocation for context
 } from "react-router-dom";
 import {
   Home as HomeIcon,
@@ -28,23 +29,41 @@ import {
   Settings,
   User,
 } from "lucide-react";
+// Since this is a single file, we assume music-metadata-browser is available globally
+// or mock the dependency. We will assume the real import is intended here.
+// NOTE: For live environments, ensure 'music-metadata-browser' is bundled.
+import { parseBlob } from "music-metadata-browser";
+
 
 // Polyfill for Buffer needed by music-metadata-browser (mocked for this environment)
 window.Buffer = Buffer;
 
-// --- MOCK METADATA PARSER ---
-const mockParseBlob = async (blob) => {
-    return {
-        common: {
-            title: blob.name.replace(/\.[^/.]+$/, "") || "Untitled Track",
-            artist: "Unknown Artist",
-            album: "Local Files",
-            picture: null,
-        },
-    };
+// --- FALLBACK COVER GENERATION UTILITIES ---
+
+/**
+ * Generates a self-contained SVG Data URL for placeholder images.
+ * This is used as a fallback if the audio file has no embedded cover art,
+ * ensuring covers always display, regardless of CSP rules.
+ * @param {string} text The character/text to display (e.g., first letter of the song title).
+ * @param {string} baseColor The background hex color.
+ * @returns {string} The SVG Data URL.
+ */
+const generateSvgCover = (text, baseColor = '333333') => {
+    const titleChar = encodeURIComponent(text.charAt(0).toUpperCase());
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
+        <rect width="150" height="150" rx="10" ry="10" fill="#${baseColor}"/>
+        <text x="75" y="100" font-size="70" font-family="sans-serif" fill="#ffffff" text-anchor="middle">${titleChar}</text>
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(svgContent)}`;
 };
 
 // --- HELPER COMPONENTS ---
+
+// Fallback covers (Data URLs) defined globally for consistency
+const MUSIC_NOTE_FALLBACK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDEwMCAxMDAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjMWRiOTU0Ii8+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtc2l6ZT0iNDAiIGZvbnQtZmFtaWx5PSJhcmlhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiI+4vzwvdGV4dD48L3N2Zz4=";
+const PLAYLIST_FALLBACK_SM = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIHJ4PSIxMCIgcnk9IjEwIiBmaWxsPSIjMjIyMjIyIi8+PHRleHQgeD0iNzUlIiB5PSI4NSUiIGZvbnQtc2l6ZT0iMzUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRkZGRkZGIj5QTEFZTElTVDwvdGV4dD48L3N2Zz4=";
+const PLAYLIST_FALLBACK_LG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMzAwIDMwMCI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxNSIgcnk9IjE1IiBmaWxsPSIjMWRiOTU0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmZmZmIj5QTEFZTElTVDwvdGV4dD48L3N2Zz4=";
+
 
 // 1. PlayerControls Component (Fixed Footer)
 const PlayerControls = ({
@@ -74,7 +93,7 @@ const PlayerControls = ({
     onSeek(newTime);
   };
   
-  const currentCover = currentSong?.cover || "https://placehold.co/50x50/333333/ffffff?text=♫";
+  const currentCover = currentSong?.cover || MUSIC_NOTE_FALLBACK;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md h-20 px-4 flex items-center justify-between z-50 border-t border-gray-800 shadow-2xl">
@@ -86,7 +105,11 @@ const PlayerControls = ({
               src={currentCover}
               alt="Cover"
               className="w-12 h-12 object-cover rounded-md shadow-md flex-shrink-0"
-              onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/50x50/1db954/ffffff?text=♫"; }}
+              onError={(e) => { 
+                console.error("PlayerControls image load error. Falling back to default.", e);
+                e.target.onerror = null; 
+                e.target.src=MUSIC_NOTE_FALLBACK; 
+              }}
             />
             <div className="truncate hidden sm:block">
               <p className="text-sm font-semibold text-white truncate">{currentSong.title}</p>
@@ -348,6 +371,8 @@ const QueueAside = ({ currentPlaybackList, currentPlayingSong }) => {
     const nowPlaying = currentSongIndex >= 0 ? currentPlaybackList[currentSongIndex] : null;
     const upNext = currentSongIndex >= 0 ? currentPlaybackList.slice(currentSongIndex + 1) : currentPlaybackList;
 
+    const fallbackCover = MUSIC_NOTE_FALLBACK;
+
     return (
         <div className="w-72 bg-black p-4 space-y-6 flex-shrink-0 h-full overflow-y-auto custom-scrollbar border-l border-gray-900 hidden 2xl:block">
             
@@ -363,10 +388,14 @@ const QueueAside = ({ currentPlaybackList, currentPlayingSong }) => {
                     <p className="text-xs uppercase text-green-400 font-semibold mb-2">Now Playing</p>
                     <div className="flex items-center space-x-3">
                         <img
-                            src={nowPlaying.cover || "https://placehold.co/40x40/333/FFF?text=♫"}
+                            src={nowPlaying.cover || fallbackCover}
                             alt="Cover"
                             className="w-10 h-10 object-cover rounded-md flex-shrink-0"
-                            onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/40x40/1db954/ffffff?text=♫"; }}
+                            onError={(e) => { 
+                                console.error("QueueAside image load error. Falling back to default.", e);
+                                e.target.onerror = null; 
+                                e.target.src=fallbackCover; 
+                            }}
                         />
                         <div className="truncate">
                             <p className="text-sm font-semibold text-white truncate">{nowPlaying.title}</p>
@@ -384,10 +413,14 @@ const QueueAside = ({ currentPlaybackList, currentPlayingSong }) => {
                     upNext.slice(0, 20).map((song, index) => ( 
                         <div key={index} className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-900/70 transition-colors cursor-pointer group">
                             <img
-                                src={song.cover || "https://placehold.co/30x30/444/AAA?text=♫"}
+                                src={song.cover || fallbackCover}
                                 alt="Cover"
                                 className="w-8 h-8 object-cover rounded-md flex-shrink-0"
-                                onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/30x30/1db954/ffffff?text=♫"; }}
+                                onError={(e) => { 
+                                    console.error("QueueAside thumbnail load error. Falling back to default.", e);
+                                    e.target.onerror = null; 
+                                    e.target.src=fallbackCover; 
+                                }}
                             />
                             <div className="truncate flex-grow">
                                 <p className="text-sm text-gray-200 truncate group-hover:text-white">{song.title}</p>
@@ -412,6 +445,8 @@ const Home = ({ playlists, onFolderSelect, selectPlaylist, currentPlaylistName }
   const playlistNames = Object.keys(playlists);
   const navigate = useNavigate();
 
+  const fallbackCover = PLAYLIST_FALLBACK_SM;
+  
   const handlePlaylistClick = (name) => {
     navigate(`/play/${encodeURIComponent(name)}`);
     selectPlaylist(name);
@@ -445,8 +480,9 @@ const Home = ({ playlists, onFolderSelect, selectPlaylist, currentPlaylistName }
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                     {playlistNames.map((name) => {
                         const list = playlists[name];
-                        const firstSong = list[0];
-                        const cover = firstSong?.cover || "https://placehold.co/150x150/222/FFF?text=PLAYLIST";
+                        // Use the cover from the first song in the playlist
+                        const firstSong = list[0]; 
+                        const cover = firstSong?.cover || fallbackCover;
                         const isActive = name === currentPlaylistName;
 
                         return (
@@ -459,7 +495,11 @@ const Home = ({ playlists, onFolderSelect, selectPlaylist, currentPlaylistName }
                                     src={cover}
                                     alt={`${name} Cover`}
                                     className="w-full h-auto aspect-square object-cover rounded-md shadow-lg mb-4 group-hover:shadow-2xl transition-shadow"
-                                    onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/150x150/1db954/ffffff?text=PLAYLIST"; }}
+                                    onError={(e) => { 
+                                        console.error("Home playlist image load error. Falling back to default.", e);
+                                        e.target.onerror = null; 
+                                        e.target.src=fallbackCover; 
+                                    }}
                                 />
                                 <h3 className="text-base font-semibold truncate text-white">{name}</h3>
                                 <p className="text-sm text-gray-400 line-clamp-2">
@@ -494,6 +534,7 @@ const PlayerPage = ({
   shuffledSongMap,
   onPlayPause,
   isPlaying,
+  currentSongIndex,
 }) => {
   const { pname } = useParams();
   const navigate = useNavigate();
@@ -503,7 +544,8 @@ const PlayerPage = ({
 
   // --- Derived Data ---
   const mainSong = songList[0];
-  const mainCover = mainSong?.cover || "https://placehold.co/256x256/222/FFF?text=PLAYLIST";
+  const fallbackCover = PLAYLIST_FALLBACK_LG;
+  const mainCover = mainSong?.cover || fallbackCover;
   const mainArtist = mainSong?.artist || "Various Artists";
 
   const totalDurationInfo = useMemo(() => {
@@ -519,18 +561,22 @@ const PlayerPage = ({
     if (songList.length > 0 && playSong) {
       selectPlaylist(playlistName);
 
-      if (currentPlaylistName === playlistName && currentSong) {
+      const listToPlay = isShuffle && shuffledSongMap[playlistName]
+                         ? shuffledSongMap[playlistName]
+                         : songList;
+      
+      // If the current playlist is playing the current song, just toggle pause
+      if (currentPlaylistName === playlistName && currentSong && isPlaying) {
           onPlayPause();
           return;
       }
       
-      const listToPlay = isShuffle && shuffledSongMap[playlistName]
-                         ? shuffledSongMap[playlistName]
-                         : songList;
-
-      playSong(listToPlay, 0);
+      // If the playlist is already selected and we are paused, resume from the current index (or start at 0)
+      const indexToPlay = currentPlaylistName === playlistName && currentSong ? currentSongIndex : 0;
+      
+      playSong(listToPlay, indexToPlay);
     }
-  }, [songList, playSong, selectPlaylist, playlistName, currentPlaylistName, currentSong, onPlayPause, isShuffle, shuffledSongMap]);
+  }, [songList, playSong, selectPlaylist, playlistName, currentPlaylistName, currentSong, onPlayPause, isShuffle, shuffledSongMap, isPlaying, currentSongIndex]);
 
   const handleSongClick = useCallback((songData, index) => {
     if (playSong) {
@@ -584,7 +630,11 @@ const PlayerPage = ({
             src={mainCover}
             alt={`${playlistName} Cover`}
             className="w-48 h-48 md:w-56 md:h-56 object-cover rounded-lg shadow-2xl mb-6 md:mb-0"
-            onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/256x256/1db954/ffffff?text=PLAYLIST"; }}
+            onError={(e) => { 
+                console.error("PlayerPage main image load error. Falling back to default.", e);
+                e.target.onerror = null; 
+                e.target.src=fallbackCover; 
+            }}
           />
 
           {/* Info Block */}
@@ -711,10 +761,13 @@ const PlayerPage = ({
 
 // 7. Main App Component
 const App = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // --- STATE ---
   const [playlists, setPlaylists] = useState({});
   const [currentPlaylistName, setCurrentPlaylistName] = useState(null);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0); 
+  const [currentSongIndex, setCurrentSongIndex] = useState(0); // Index in the current playback list
   const [currentPlayingSong, setCurrentPlayingSong] = useState(null); 
   
   // Playback Mode States
@@ -731,7 +784,11 @@ const App = () => {
   // --- DERIVED STATE ---
   const playlistNames = Object.keys(playlists);
   const currentSongListOriginal = playlists[currentPlaylistName] || [];
+  const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName); // Used for playlist transitions
 
+  // --- PLAYBACK UTILITIES ---
+
+  // Helper to get the list currently used for playback (original or shuffled)
   const getPlaybackList = useCallback(() => {
       if (isShuffle && currentPlaylistName && shuffledSongMap[currentPlaylistName]) {
           return shuffledSongMap[currentPlaylistName];
@@ -741,13 +798,6 @@ const App = () => {
   
   const currentPlaybackList = getPlaybackList();
   
-  const currentSongIndexInPlaybackList = useMemo(() => {
-    if (!currentPlayingSong) return -1;
-    return currentPlaybackList.findIndex(song => song.url === currentPlayingSong.url);
-  }, [currentPlayingSong, currentPlaybackList]);
-  
-  const currentPlaylistIndex = useMemo(() => playlistNames.indexOf(currentPlaylistName), [playlistNames, currentPlaylistName]);
-
   // Fisher-Yates shuffle algorithm
   const createShuffledList = useCallback((list) => {
       const array = [...list];
@@ -757,73 +807,12 @@ const App = () => {
       }
       return array;
   }, []);
-
-  // --- HANDLERS ---
-
-  const handleFolderSelect = async (e) => {
-    const files = Array.from(e.target.files).filter((file) =>
-      file.type.includes("audio")
-    );
-
-    const tempPlaylists = {};
-
-    await Promise.all(
-      files.map(async (file) => {
-        const pathParts = (file.webkitRelativePath || file.name).split("/");
-        const playlistName =
-          pathParts.length > 1 && pathParts[1] !== "" && !pathParts[1].endsWith(".mp3")
-            ? pathParts[1]
-            : "Local Music";
-
-        let coverUrl = null;
-        let title = file.name.replace(/\.[^/.]+$/, "");
-        let artist = "Unknown Artist";
-        let album = playlistName;
-
-        try {
-          const blob = file.slice();
-          const metadata = await mockParseBlob(blob); 
-          
-          if (metadata.common) {
-            title = metadata.common.title || title;
-            album = metadata.common.album || playlistName; 
-            artist = metadata.common.artist || "Unknown Artist";
-            coverUrl = "https://placehold.co/50x50/1db954/ffffff?text=♫"; // Placeholder
-          }
-        } catch (err) {
-          console.warn("Failed to read metadata for", file.name, err);
-        }
-
-        const songData = {
-          title,
-          artist,
-          album: album, 
-          url: URL.createObjectURL(file), 
-          cover: coverUrl, 
-        };
-
-        if (!tempPlaylists[playlistName]) tempPlaylists[playlistName] = [];
-        tempPlaylists[playlistName].push(songData);
-      })
-    );
-
-    setPlaylists(tempPlaylists);
-    const firstPlaylist = Object.keys(tempPlaylists)[0];
-    setCurrentPlaylistName(firstPlaylist);
-    if(tempPlaylists[firstPlaylist]?.length > 0) {
-        const list = tempPlaylists[firstPlaylist];
-        playSong(list, 0);
-    } 
-  };
-
-  const selectPlaylist = (playlistName) => {
-    setCurrentPlaylistName(playlistName);
-  };
   
+  // 2. Play Song (Centralized logic to load and play audio)
   const playSong = useCallback((songList, index) => {
     const songToPlay = songList[index];
     
-    setCurrentSongIndex(index); 
+    setCurrentSongIndex(index);
     setCurrentPlayingSong(songToPlay);
     
     if (!songToPlay || !songToPlay.url) {
@@ -832,47 +821,64 @@ const App = () => {
         return;
     }
     
-    audioRef.current.src = songToPlay.url;
-    audioRef.current.load();
+    if (audioRef.current.src !== songToPlay.url) {
+        audioRef.current.src = songToPlay.url;
+        audioRef.current.load();
+    }
     
+    // Use a small delay for reliable playback start after loading
     setTimeout(() => {
         audioRef.current.play().catch(e => console.error("Playback failed:", e));
         setIsPlaying(true);
     }, 100);
   }, []); 
 
+  // --- HANDLERS ---
+
+  // 1. Core Playback Toggle
   const onPlayPause = useCallback(() => {
-    const currentList = getPlaybackList();
-    
     if (currentPlayingSong) {
         if (isPlaying) {
             audioRef.current.pause();
             setIsPlaying(false);
         } else {
-            if (!audioRef.current.src && currentList.length > 0) {
-                playSong(currentList, 0); 
+            const currentList = getPlaybackList();
+            if (!audioRef.current.src || audioRef.current.paused) {
+                // If audio hasn't been loaded yet or is paused, load and play the current song index
+                playSong(currentList, currentSongIndex);
             } else {
                 audioRef.current.play().catch(e => console.error("Playback error:", e));
                 setIsPlaying(true);
             }
         }
     } else if (currentPlaybackList.length > 0) {
+        // If nothing is loaded, start the first song
         playSong(currentPlaybackList, 0);
     }
-  }, [currentPlayingSong, isPlaying, currentPlaybackList, playSong, getPlaybackList]);
+  }, [currentPlayingSong, isPlaying, currentPlaybackList, currentSongIndex, playSong, getPlaybackList]);
 
 
+  // New: Toggle Shuffle Mode
   const toggleShuffle = useCallback(() => {
     if (!currentPlaylistName || currentSongListOriginal.length === 0) return;
 
     if (isShuffle) {
+        // Turning OFF shuffle: Revert to original list index
         setIsShuffle(false);
+        
+        // Find the current song's index in the original list
         const currentIndexInOriginal = currentSongListOriginal.findIndex(
             s => s.url === currentPlayingSong?.url
         );
         setCurrentSongIndex(currentIndexInOriginal >= 0 ? currentIndexInOriginal : 0);
         
+        // Restart playback in the context of the original list if playing
+        if(currentPlayingSong && isPlaying) {
+            playSong(currentSongListOriginal, currentIndexInOriginal >= 0 ? currentIndexInOriginal : 0);
+        }
+        
     } else {
+        // Turning ON shuffle: Create a new shuffled list for this playlist
         const shuffledList = createShuffledList(currentSongListOriginal);
         
         setShuffledSongMap(prev => ({
@@ -881,96 +887,130 @@ const App = () => {
         }));
         setIsShuffle(true);
         
+        // Find the current song's index in the new shuffled list
         const currentIndexInShuffled = shuffledList.findIndex(
             s => s.url === currentPlayingSong?.url
         );
         setCurrentSongIndex(currentIndexInShuffled >= 0 ? currentIndexInShuffled : 0);
+        
+        // Restart playback in the context of the new shuffled list if playing
+        if(currentPlayingSong && isPlaying) {
+            playSong(shuffledList, currentIndexInShuffled >= 0 ? currentIndexInShuffled : 0);
+        }
     }
-  }, [isShuffle, currentPlaylistName, currentSongListOriginal, currentPlayingSong, createShuffledList]);
+  }, [isShuffle, currentPlaylistName, currentSongListOriginal, currentPlayingSong, createShuffledList, isPlaying, playSong]);
   
+  // New: Toggle Repeat Mode
   const toggleRepeat = useCallback(() => {
     setRepeatMode(prevMode => {
       switch (prevMode) {
-        case 'off': return 'all';
-        case 'all': return 'one';
-        case 'one': default: return 'off';
+        case 'off':
+          return 'all'; // off -> repeat all
+        case 'all':
+          return 'one'; // repeat all -> repeat one
+        case 'one':
+        default:
+          return 'off'; // repeat one -> off
       }
     });
-    // Set audio loop property for 'one' repeat mode
-    audioRef.current.loop = (repeatMode === 'all'); // It will be 'one' next, so set loop to true. When it switches to 'off', it will be false.
-  }, [repeatMode]);
+  }, []);
+  
+  const selectPlaylist = useCallback((playlistName) => {
+    // Only change playlist name, actual playing song change happens in playSong
+    setCurrentPlaylistName(playlistName);
+    setCurrentSongIndex(0);
+  }, []);
 
 
+  // 3. Skip Next (Handles song end and playlist transitions)
   const onNext = useCallback(() => {
     const currentList = getPlaybackList();
-    if (currentList.length === 0 || !currentPlayingSong) {
-        setIsPlaying(false);
-        return; 
-    }
+    if (currentList.length === 0) return; 
     
-    const actualIndex = currentSongIndexInPlaybackList;
     const currentMaxIndex = currentList.length - 1;
 
-    if (repeatMode === 'one') {
-      playSong(currentList, actualIndex);
+    if (repeatMode === 'one' && currentPlayingSong) {
+      // Repeat One: play the same song again
+      playSong(currentList, currentSongIndex);
       return;
     }
 
-    if (actualIndex < currentMaxIndex) {
-        const nextIndex = actualIndex + 1;
+    if (currentSongIndex < currentMaxIndex) {
+        // Case A: Not the last song in the current list -> Go to next song
+        const nextIndex = currentSongIndex + 1;
         playSong(currentList, nextIndex);
         
     } else if (repeatMode === 'all') {
+        // Case B: Last song, Repeat All is ON -> Loop back to the first song
         playSong(currentList, 0);
 
     } else {
-        const nextPlaylistIndex = (currentPlaylistIndex + 1) % playlistNames.length;
+        // Case C: Last song, Repeat is OFF -> Try to go to the next playlist
         
-        if (playlistNames.length <= 1) {
-            setIsPlaying(false);
-            return;
-        }
+        const nextPlaylistIndex = (currentPlaylistIndex + 1);
         
-        const nextPlaylistName = playlistNames[nextPlaylistIndex];
-        const nextSongListOriginal = playlists[nextPlaylistName];
+        if (nextPlaylistIndex < playlistNames.length) {
+            
+            const nextPlaylistName = playlistNames[nextPlaylistIndex];
+            const nextSongListOriginal = playlists[nextPlaylistName];
 
-        if (nextSongListOriginal && nextSongListOriginal.length > 0) {
+            // 1. Update the current playlist state
             setCurrentPlaylistName(nextPlaylistName);
             
+            // 2. Determine song list (shuffled or original)
             let songListToPlay = nextSongListOriginal;
+            let indexToPlay = 0;
+
             if (isShuffle) {
                 let shuffledList = shuffledSongMap[nextPlaylistName];
                 if (!shuffledList) {
+                    // Create shuffled list if it doesn't exist for the new playlist
                     shuffledList = createShuffledList(nextSongListOriginal);
-                    setShuffledSongMap(prev => ({ ...prev, [nextPlaylistName]: shuffledList }));
+                    setShuffledSongMap(prev => ({
+                        ...prev,
+                        [nextPlaylistName]: shuffledList
+                    }));
                 }
                 songListToPlay = shuffledList;
             }
-            playSong(songListToPlay, 0);
+
+            // Must use setTimeout or navigate to trigger state change and re-render.
+            // Using playSong directly after setting name is fine as playSong uses the passed list.
+            playSong(songListToPlay, indexToPlay);
+            
+            // Navigate to update the UI
+            navigate(`/play/${encodeURIComponent(nextPlaylistName)}`);
+
         } else {
+            // Case D: Reached the end of all music (and not repeating all)
             setIsPlaying(false);
+            setCurrentPlayingSong(null);
+            setCurrentTime(0);
+            setDuration(0);
         }
     }
-  }, [repeatMode, currentPlayingSong, currentSongIndexInPlaybackList, getPlaybackList, currentPlaylistIndex, playlistNames, playlists, isShuffle, shuffledSongMap, createShuffledList, playSong]);
+  }, [currentSongIndex, repeatMode, currentPlayingSong, getPlaybackList, currentPlaylistIndex, playlistNames, playlists, isShuffle, shuffledSongMap, createShuffledList, playSong, navigate]);
 
 
+  // 4. Skip Previous (Refined to implement "restart song" behavior)
   const onPrev = useCallback(() => {
     const currentList = getPlaybackList();
-    if (currentList.length === 0 || !currentPlayingSong) return;
-
-    const actualIndex = currentSongIndexInPlaybackList;
-
+    
+    // Standard Music Player behavior: if currentTime > 3 seconds, restart the song
     if (audioRef.current.currentTime > 3) {
-        playSong(currentList, actualIndex);
+        playSong(currentList, currentSongIndex);
         return;
     }
 
-    if (actualIndex > 0) {
-        const prevIndex = actualIndex - 1;
+    if (currentSongIndex > 0) {
+        // Go to previous song in the current list
+        const prevIndex = currentSongIndex - 1;
         playSong(currentList, prevIndex);
     } else if (repeatMode === 'all') {
+        // If at the start and Repeat All is ON, loop to the end of the current list
         playSong(currentList, currentList.length - 1);
-    } else if (actualIndex === 0 && currentPlaylistIndex > 0) {
+    } else if (currentSongIndex === 0 && currentPlaylistIndex > 0) {
+        // If at the start, repeat is OFF, and not the first playlist: Go to the last song of the previous playlist
         const prevPlaylistIndex = currentPlaylistIndex - 1;
         const prevPlaylistName = playlistNames[prevPlaylistIndex];
         const prevSongListOriginal = playlists[prevPlaylistName];
@@ -978,6 +1018,7 @@ const App = () => {
         if (prevSongListOriginal && prevSongListOriginal.length > 0) {
             setCurrentPlaylistName(prevPlaylistName);
             
+            // Determine which list to play from (original or shuffled)
             let songListToPlay = prevSongListOriginal;
             if (isShuffle && shuffledSongMap[prevPlaylistName]) {
                 songListToPlay = shuffledSongMap[prevPlaylistName];
@@ -985,12 +1026,17 @@ const App = () => {
 
             const prevSongIndex = songListToPlay.length - 1;
             playSong(songListToPlay, prevSongIndex);
+            
+            // Navigate to update the UI
+            navigate(`/play/${encodeURIComponent(prevPlaylistName)}`);
         }
     } else {
+        // If at the start and can't go back, restart the current song
         playSong(currentList, 0);
     }
-  }, [repeatMode, currentPlayingSong, currentSongIndexInPlaybackList, currentPlaylistIndex, playlistNames, playlists, isShuffle, shuffledSongMap, getPlaybackList, playSong]);
+  }, [currentSongIndex, repeatMode, currentPlaylistIndex, playlistNames, playlists, isShuffle, shuffledSongMap, getPlaybackList, playSong, navigate]);
   
+  // 5. Seek Handler
   const onSeek = useCallback((time) => {
     if (audioRef.current) {
         audioRef.current.currentTime = time;
@@ -998,7 +1044,101 @@ const App = () => {
     }
   }, []);
 
-  // Audio Event Listeners
+  // FOLDER SELECTION HANDLER (UPDATED with user's core logic and robust fallback)
+  const handleFolderSelect = async (e) => {
+    // This function handles loading audio files from a user-selected folder
+    const files = Array.from(e.target.files).filter((file) =>
+      file.type.includes("audio")
+    );
+
+    const tempPlaylists = {};
+    const objectUrls = []; // Track URLs to revoke later
+
+    await Promise.all(
+      files.map(async (file) => {
+        const pathParts = (file.webkitRelativePath || file.name).split("/");
+        
+        // The playlist name is the folder name (second to last part in path) or the file name if no folder
+        const playlistName = pathParts.length > 1 && pathParts[pathParts.length - 2] !== ""
+                                ? pathParts[pathParts.length - 2]
+                                : file.name.replace(/\.[^/.]+$/, "");
+
+        // Initialize metadata placeholders
+        let coverUrl = null;
+        let title = file.name.replace(/\.[^/.]+$/, "");
+        let artist = "Unknown Artist";
+
+        try {
+            // Attempt to read actual metadata using the imported library function
+            const blob = file.slice();
+            const metadata = await parseBlob(blob);
+
+            if (metadata.common) {
+                title = metadata.common.title || title;
+                artist = metadata.common.artist || "Unknown Artist";
+                
+                // Attempt to extract embedded cover image
+                const pictures = metadata.common.picture;
+                if (pictures && pictures.length > 0) {
+                    const pic = pictures[0];
+                    // Create a Blob URL for the cover image data
+                    coverUrl = URL.createObjectURL(
+                        new Blob([pic.data], { type: pic.format })
+                    );
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to read metadata for", file.name, err);
+            // If metadata fails completely, title/artist fall back to filename, coverUrl remains null
+        }
+        
+        // --- FALLBACK LOGIC ---
+        if (!coverUrl) {
+             // If no cover was extracted or parsing failed, generate a reliable SVG cover
+             const hash = Array.from(title).reduce((h, char) => h + char.charCodeAt(0), 0);
+             const colorInt = (hash * 1234567) % 0xffffff;
+             const color = colorInt.toString(16).padStart(6, '0');
+             coverUrl = generateSvgCover(title, color);
+        }
+        
+        const url = URL.createObjectURL(file);
+        objectUrls.push(url);
+
+        const songData = {
+          title,
+          artist,
+          album: playlistName, // Set album to playlist name if metadata didn't provide one
+          cover: coverUrl,
+          url: url,
+        };
+
+        if (!tempPlaylists[playlistName]) {
+          tempPlaylists[playlistName] = [];
+        }
+        tempPlaylists[playlistName].push(songData);
+      })
+    );
+    
+    // Revoke old object URLs before setting new state
+    Object.values(playlists).flat().forEach(song => {
+        if (song.url) URL.revokeObjectURL(song.url);
+    });
+
+    setPlaylists(prev => ({...prev, ...tempPlaylists}));
+    
+    // Navigate to the first loaded playlist or Home
+    if (Object.keys(tempPlaylists).length > 0) {
+        const firstPlaylistName = Object.keys(tempPlaylists)[0];
+        setCurrentPlaylistName(firstPlaylistName);
+        setCurrentSongIndex(0); // Reset index
+        navigate(`/play/${encodeURIComponent(firstPlaylistName)}`);
+    } else {
+        navigate('/');
+    }
+  };
+
+
+  // 6. Audio Event Listeners (Connects browser audio events to React state)
   useEffect(() => {
     const audio = audioRef.current;
     
@@ -1011,6 +1151,7 @@ const App = () => {
     const togglePlay = () => setIsPlaying(true);
     const togglePause = () => setIsPlaying(false);
     
+    // Song ends -> calls onNext(), which contains the playback mode logic
     const handleSongEnd = () => onNext(); 
 
     audio.addEventListener('loadeddata', setAudioData);
@@ -1019,6 +1160,7 @@ const App = () => {
     audio.addEventListener('pause', togglePause);
     audio.addEventListener('ended', handleSongEnd);
     
+    // Cleanup function
     return () => {
         audio.removeEventListener('loadeddata', setAudioData);
         audio.removeEventListener('timeupdate', updateTime);
@@ -1028,95 +1170,92 @@ const App = () => {
     };
   }, [onNext]);
   
-  // Auto-play the first song of the selected playlist if nothing is playing
+  // --- CLEANUP ---
   useEffect(() => {
-      if (currentPlaylistName && !currentPlayingSong) {
-          const list = playlists[currentPlaylistName];
-          if (list && list.length > 0) {
-              const listToPlay = isShuffle ? shuffledSongMap[currentPlaylistName] || list : list;
-              playSong(listToPlay, 0);
-          }
-      }
-  }, [currentPlaylistName, currentPlayingSong, playlists, isShuffle, shuffledSongMap, playSong]);
-
+    // Revoke object URLs when the component unmounts
+    return () => {
+        audioRef.current.pause();
+        Object.values(playlists).flat().forEach(song => {
+            if (song.url) URL.revokeObjectURL(song.url);
+        });
+    };
+  }, [playlists]);
 
   return (
-    <main className="h-screen bg-black overflow-hidden text-white font-sans">
+    <div className="flex flex-col h-screen bg-gray-900 text-white font-inter">
+      {/* Main Layout Area (Sidebar + Content + Queue) */}
+      <div className="flex flex-grow overflow-hidden mb-20"> {/* mb-20 creates space for the player */}
         
-        {/* Main Application Layout (Sidebar, Content, Aside) */}
-        <div className="h-[calc(100vh-5rem)] flex">
-            
-            {/* Left Sidebar */}
-            <Sidebar 
-                onFolderSelect={handleFolderSelect} 
-                playlistNames={playlistNames} 
-                selectPlaylist={selectPlaylist} 
-            />
-
-            {/* Center Area (Navbar + Main Content) */}
-            <div className="flex-grow min-w-0 flex flex-col bg-gray-900 rounded-lg m-2 overflow-hidden shadow-xl">
-                <Routes>
-                    <Route path="*" element={<Navbar navigateBack={() => window.history.back()} navigateForward={() => window.history.forward()}/>} />
-                </Routes>
-                
-                <div className="flex-grow overflow-y-auto custom-scrollbar">
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={
-                                <Home
-                                    playlists={playlists}
-                                    currentPlaylistName={currentPlaylistName}
-                                    onFolderSelect={handleFolderSelect}
-                                    selectPlaylist={selectPlaylist}
-                                />
-                            }
-                        />
-                        <Route
-                            path="/play/:pname"
-                            element={
-                                <PlayerPage
-                                    playlists={playlists}
-                                    currentPlaylistName={currentPlaylistName}
-                                    selectPlaylist={selectPlaylist} 
-                                    playSong={playSong}
-                                    currentSong={currentPlayingSong}
-                                    isShuffle={isShuffle} 
-                                    shuffledSongMap={shuffledSongMap}
-                                    onPlayPause={onPlayPause}
-                                    isPlaying={isPlaying}
-                                />
-                            }
-                        />
-                    </Routes>
-                </div>
-            </div>
-
-            {/* Right Aside/Queue (Hidden by default until 2XL screens) */}
-            <QueueAside
-                currentPlaybackList={currentPlaybackList}
-                currentPlayingSong={currentPlayingSong}
-            />
-            
-        </div>
-
-        {/* FIXED PLAYER CONTROLS */}
-        <PlayerControls 
-            currentSong={currentPlayingSong}
-            isPlaying={isPlaying}
-            duration={duration}
-            currentTime={currentTime}
-            onPlayPause={onPlayPause}
-            onPrev={onPrev}
-            onNext={onNext}
-            onSeek={onSeek}
-            audioRef={audioRef}
-            isShuffle={isShuffle}
-            toggleShuffle={toggleShuffle}
-            repeatMode={repeatMode}
-            toggleRepeat={toggleRepeat}
+        {/* Sidebar */}
+        <Sidebar
+          onFolderSelect={handleFolderSelect}
+          playlistNames={playlistNames}
+          selectPlaylist={selectPlaylist}
         />
-    </main>
+
+        {/* Main Content Area */}
+        <div className="flex flex-col flex-grow min-w-0">
+            <Navbar navigateBack={() => navigate(-1)} navigateForward={() => navigate(1)} />
+            <main className="flex-grow overflow-y-auto custom-scrollbar bg-gray-900/90">
+                <Routes>
+                    <Route path="/" element={
+                        <Home 
+                            playlists={playlists} 
+                            onFolderSelect={handleFolderSelect}
+                            selectPlaylist={selectPlaylist}
+                            currentPlaylistName={currentPlaylistName}
+                            playSong={playSong} 
+                            isShuffle={isShuffle}
+                        />} 
+                    />
+                    <Route path="/search" element={
+                        <div className="p-8"><h1 className="text-3xl font-bold">Search (Not Implemented)</h1></div>} 
+                    />
+                    <Route path="/play/:pname" element={
+                        <PlayerPage 
+                            playlists={playlists}
+                            currentPlaylistName={currentPlaylistName}
+                            currentSong={currentPlayingSong}
+                            playSong={playSong}
+                            selectPlaylist={selectPlaylist}
+                            isShuffle={isShuffle}
+                            shuffledSongMap={shuffledSongMap}
+                            onPlayPause={onPlayPause}
+                            isPlaying={isPlaying}
+                            currentSongIndex={currentSongIndex}
+                        />} 
+                    />
+                    <Route path="*" element={
+                        <div className="p-8"><h1 className="text-3xl font-bold">404 Not Found</h1></div>} 
+                    />
+                </Routes>
+            </main>
+        </div>
+        
+        {/* Queue Aside */}
+        <QueueAside 
+            currentPlaybackList={currentPlaybackList}
+            currentPlayingSong={currentPlayingSong}
+        />
+      </div>
+
+      {/* Player Controls (Fixed Footer) */}
+      <PlayerControls
+        currentSong={currentPlayingSong}
+        isPlaying={isPlaying}
+        duration={duration}
+        currentTime={currentTime}
+        onPlayPause={onPlayPause}
+        onPrev={onPrev}
+        onNext={onNext}
+        onSeek={onSeek}
+        audioRef={audioRef}
+        isShuffle={isShuffle}
+        toggleShuffle={toggleShuffle}
+        repeatMode={repeatMode}
+        toggleRepeat={toggleRepeat}
+      />
+    </div>
   );
 };
 
