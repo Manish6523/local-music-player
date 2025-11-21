@@ -63,29 +63,12 @@ const Home = ({
                 key={pl}
                 data={playlists[pl]}
                 title={pl}
+                currentPlaylist={currentPlaylist}
                 onClick={() => selectPlaylist(pl)} // This updates App state before navigation
               />
             ))}
           </div>
         </section>
-
-        {/* === Featured/Active Section (Optional) === */}
-        {currentPlaylist && playlists[currentPlaylist] && (
-          <section className="mt-10 p-6 bg-red-800/20 rounded-xl border border-red-700/50">
-            <h2 className="text-xl font-bold mb-4 text-red-300">
-              Currently Active: {currentPlaylist}
-            </h2>
-            <p className="text-gray-300">
-              Total Songs: {playlists[currentPlaylist].length}
-            </p>
-            <Link
-              to={`/play/${currentPlaylist}`}
-              className="mt-3 inline-block px-4 py-2 bg-red-600 rounded-full hover:bg-red-700 transition font-semibold"
-            >
-              Go to Player
-            </Link>
-          </section>
-        )}
       </div>
     </main>
   );

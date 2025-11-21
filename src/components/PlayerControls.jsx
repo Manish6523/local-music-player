@@ -44,28 +44,19 @@ const PlayerControls = ({
     // Calculate progress percentage for the bar
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
     
-    // Calculate volume percentage for custom UI
-    const volumePercent = (isMuted || audioRef.current?.volume === 0) ? 0 : volume * 100;
-
-    // Handle volume change based on click/drag on the custom bar
-    const handleVolumeSeek = useCallback((e) => {
-        if (!audioRef.current || !e.currentTarget.offsetWidth) return;
-
-        const rect = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const barWidth = rect.width;
-        
-        // Calculate new volume (0 to 1) based on click position
-        let newVolume = clickX / barWidth;
-        
-        // Clamp the value between 0 and 1
-        newVolume = Math.max(0, Math.min(1, newVolume));
-
-        // Update state and audio element
+    // --- START: Volume Handler for standard range input ---
+    const handleVolumeChange = useCallback((e) => {
+        const newVolume = parseFloat(e.target.value);
         setVolume(newVolume);
-        audioRef.current.volume = newVolume;
-        setIsMuted(newVolume === 0);
+        
+        // Update the audio element directly
+        if (audioRef.current) {
+            audioRef.current.volume = newVolume;
+            setIsMuted(newVolume === 0);
+        }
     }, [audioRef]);
+    // --- END: Volume Handler for standard range input ---
+
 
     // Handle seek on the progress bar (Music Position)
     const handleSeek = useCallback((e) => {
@@ -106,8 +97,57 @@ const PlayerControls = ({
 
 
     return (
-        <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md h-24 border-t border-gray-800 text-white z-50 shadow-2xl">
-            {/* Removed the dedicated <style> block as we are now using the custom div structure */}
+        <aside className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md h-20 border-t border-gray-800 text-white z-50 shadow-2xl">
+            {/* Custom CSS for Range Input Styling (Track and Thumb) */}
+            <style jsx="true">{`
+                /* Base style for the slider track */
+                .volume-slider {
+                    background: transparent;
+                }
+
+                /* Webkit (Chrome/Safari) Track */
+                .volume-slider::-webkit-slider-runnable-track {
+                    width: 100%;
+                    height: 4px;
+                    background: #374151; /* gray-700 */
+                    border-radius: 3px;
+                }
+                
+                /* Webkit (Chrome/Safari) Thumb */
+                .volume-slider::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    margin-top: -6px; /* Center the thumb vertically */
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: #ef4444; /* red-500 */
+                    cursor: pointer;
+                    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+                    transition: background 0.15s ease-in-out;
+                }
+                
+                /* Firefox Track */
+                .volume-slider::-moz-range-track {
+                    width: 100%;
+                    height: 4px;
+                    background: #374151; /* gray-700 */
+                    border-radius: 3px;
+                }
+
+                /* Firefox Thumb */
+                .volume-slider::-moz-range-thumb {
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: #ef4444; /* red-500 */
+                    cursor: pointer;
+                    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+                    border: none;
+                }
+
+            `}</style>
+
             
             <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-6">
                 
@@ -181,23 +221,20 @@ const PlayerControls = ({
                         {isMuted || audioRef.current?.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
                     
-                    {/* Volume Slider (Now using custom seek bar style) */}
-                    <div 
-                        className="w-24 h-1 bg-gray-700 rounded-full cursor-pointer group"
-                        onClick={handleVolumeSeek}
-                    >
-                        {/* Filled Volume */}
-                        <div 
-                            className="h-full bg-red-500 rounded-full relative" 
-                            style={{ width: `${volumePercent}%` }}
-                        >
-                            {/* Drag Handle */}
-                            <div className="absolute -right-1.5 -top-1.5 w-4 h-4 rounded-full bg-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        </div>
-                    </div>
+                    {/* Volume Slider (HTML Range Input restored and styled) */}
+                    <input 
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                        // Use the custom class defined in the <style> tag
+                        className="volume-slider w-24 h-4 rounded-lg appearance-none cursor-pointer"
+                    />
                 </div>
             </div>
-        </footer>
+        </aside>
     );
 }
 
