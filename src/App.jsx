@@ -15,11 +15,7 @@ import {
   useLocation, // Added useLocation for context
 } from "react-router-dom";
 import {
-  Home as HomeIcon,
-  Search,
   Library,
-  ChevronLeft,
-  ChevronRight,
   Play,
   Pause,
   SkipBack,
@@ -32,8 +28,6 @@ import {
   Music,
   Disc3,
   Clock,
-  Settings,
-  User,
   MoreHorizontal,
 } from "lucide-react";
 // Since this is a single file, we assume music-metadata-browser is available globally
@@ -120,7 +114,7 @@ const RightPlayerPanel = ({
     <div className="w-80 relative flex flex-shrink-0  flex-col h-full overflow-y-auto custom-scrollbar border-l border-gray-900">
       {/* 🔥 Blurred background cover */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 blur-xs"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 blur-lg"
         style={{
           backgroundImage: `url(${currentCover || fallbackCover})`,
         }}
@@ -183,14 +177,18 @@ const RightPlayerPanel = ({
                     : "text-gray-300 hover:text-white"
                 }`}
               >
-                <Shuffle size={20} />
+                <Shuffle size={20} className="cursor-pointer" />
               </button>
 
               <button
                 onClick={onPrev}
                 className="text-gray-200 hover:text-white"
               >
-                <SkipBack size={24} fill="currentColor" />
+                <SkipBack
+                  size={24}
+                  fill="currentColor"
+                  className="cursor-pointer"
+                />
               </button>
 
               <button
@@ -198,9 +196,17 @@ const RightPlayerPanel = ({
                 className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-black shadow-lg hover:scale-105 transition-transform"
               >
                 {isPlaying ? (
-                  <Pause size={28} fill="currentColor" />
+                  <Pause
+                    size={28}
+                    fill="currentColor"
+                    className="cursor-pointer"
+                  />
                 ) : (
-                  <Play size={28} fill="currentColor" className="ml-1" />
+                  <Play
+                    size={28}
+                    fill="currentColor"
+                    className="ml-1 cursor-pointer"
+                  />
                 )}
               </button>
 
@@ -208,7 +214,11 @@ const RightPlayerPanel = ({
                 onClick={onNext}
                 className="text-gray-200 hover:text-white"
               >
-                <SkipForward size={24} fill="currentColor" />
+                <SkipForward
+                  size={24}
+                  fill="currentColor"
+                  className="cursor-pointer"
+                />
               </button>
 
               <button
@@ -219,7 +229,7 @@ const RightPlayerPanel = ({
                     : "text-gray-300 hover:text-white"
                 }`}
               >
-                <Repeat size={20} />
+                <Repeat size={20} className="cursor-pointer" />
               </button>
             </div>
 
@@ -296,7 +306,7 @@ const RightPlayerPanel = ({
                     <p className="text-xs text-gray-400">{song.artist}</p>
                   </div>
 
-                  <span className="text-xs text-gray-400">3:30</span>
+                  <span className="text-xs text-gray-400">{song.duration}</span>
                 </div>
               ))
             ) : (
@@ -337,7 +347,7 @@ const Navbar = ({ onFolderSelect }) => {
           onClick={() => navigate("/")}
           className="flex items-center space-x-2"
         >
-          <Music size={32} className="text-green-500" />
+          <Music size={32} className="text-green-500 cursor-pointer" />
           <span className="text-xl font-extrabold text-white hidden sm:inline">
             Local Music
           </span>
@@ -383,7 +393,7 @@ const Home = ({
     <div className="flex-grow p-4 md:p-8 overflow-y-auto text-white min-h-full relative">
       {/* 🔥 Blurred Background Layer */}
       <div
-        className="absolute inset-0 bg-gray-900 bg-cover bg-center bg-no-repeat blur-sm opacity-40"
+        className="absolute inset-0 bg-gray-900 bg-cover bg-center bg-no-repeat blur-xs opacity-40"
         style={{
           backgroundImage: `url(${currentSong?.cover || MUSIC_NOTE_FALLBACK})`,
         }}
@@ -393,7 +403,10 @@ const Home = ({
       <div className="relative z-10 mt-8">
         {playlistNames.length === 0 ? (
           <div className="text-center p-12 border border-gray-800 rounded-xl bg-gray-800/50">
-            <Library size={48} className="mx-auto text-gray-500 mb-4" />
+            <Library
+              size={48}
+              className="mx-auto text-gray-500 mb-4 cursor-pointer"
+            />
             <h2 className="text-2xl font-semibold mb-2">
               Your library is empty
             </h2>
@@ -449,8 +462,8 @@ const Home = ({
                       {/* Active Indicator */}
                       {isActive && (
                         <Disc3
-                          size={20}
-                          className="text-green-500 absolute top-3 right-3 animate-spin-slow drop-shadow-lg"
+                          size={25}
+                          className="text-green-500 absolute top-3 right-3 cursor-pointer animate-spin  drop-shadow-lg"
                         />
                       )}
                     </div>
@@ -645,9 +658,13 @@ const PlayerPage = ({
             className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/50 hover:bg-green-400 transition-transform hover:scale-105 text-black"
           >
             {isCurrentPlaylistPlaying ? (
-              <Pause size={28} fill="currentColor" />
+              <Pause size={28} fill="currentColor" className="cursor-pointer" />
             ) : (
-              <Play size={28} fill="currentColor" className="ml-0.5" />
+              <Play
+                size={28}
+                fill="currentColor"
+                className="ml-0.5 cursor-pointer"
+              />
             )}
           </button>
 
@@ -670,7 +687,7 @@ const PlayerPage = ({
           {/* Table Header */}
           <div className="grid grid-cols-[30px_1fr_150px_80px] text-gray-400 text-xs uppercase font-semibold border-b border-gray-700 pb-2 mb-2 px-2">
             <div className="text-center">#</div>
-            <div>Title</div>
+            <div className="ml-3">Title</div>
             <div className="hidden md:block">Album</div>
             <div className="flex items-center justify-end">
               <Clock size={16} />
@@ -686,7 +703,7 @@ const PlayerPage = ({
               <div
                 key={idx}
                 onClick={() => handleSongClick(song, idx)}
-                className={`grid grid-cols-[30px_1fr_150px_80px] items-center py-2 px-2 rounded-lg cursor-pointer transition-colors duration-200
+                className={`grid grid-cols-[30px_1fr_150px_80px] mb-1 items-center py-2 px-2 rounded-lg cursor-pointer transition-colors duration-200
               ${
                 isCurrent
                   ? "bg-gray-700/50 shadow-inner"
@@ -700,24 +717,31 @@ const PlayerPage = ({
                   }`}
                 >
                   {isCurrent ? (
-                    <Play size={14} fill="currentColor" className="mx-auto" />
+                    <Play
+                      size={14}
+                      fill="currentColor"
+                      className="mx-auto cursor-pointer"
+                    />
                   ) : (
                     idx + 1
                   )}
                 </span>
 
                 {/* Title */}
-                <div className="truncate">
-                  <p
-                    className={`text-base font-medium truncate ${
-                      isCurrent ? "text-white" : "text-gray-100"
-                    }`}
-                  >
-                    {song.title}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {song.artist || "Unknown Artist"}
-                  </p>
+                <div className="truncate flex gap-2 ml-3">
+                  <img src={song?.cover} width={"50px"} alt="cover" className="rounded-md" />
+                  <div>
+                    <p
+                      className={`text-base font-medium truncate ${
+                        isCurrent ? "text-white" : "text-gray-100"
+                      }`}
+                    >
+                      {song.title}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {song.artist || "Unknown Artist"}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Album */}
@@ -726,7 +750,8 @@ const PlayerPage = ({
                 </div>
 
                 {/* Duration */}
-                <div className="text-sm text-gray-400 text-right">3:30</div>
+                {console.log("Rendering song duration for", song)}
+                <div className="text-sm text-gray-400 text-right">{song?.duration}</div>
               </div>
             );
           })}
@@ -1116,6 +1141,7 @@ const App = () => {
         let coverUrl = null;
         let title = file.name.replace(/\.[^/.]+$/, "");
         let artist = "Unknown Artist";
+        let duration = 180; // Default duration in seconds
 
         try {
           // Attempt to read actual metadata using the imported library function
@@ -1125,6 +1151,12 @@ const App = () => {
           if (metadata.common) {
             title = metadata.common.title || title;
             artist = metadata.common.artist || "Unknown Artist";
+            if (metadata.format && metadata.format.duration) {
+              const totalSeconds = Math.floor(metadata.format.duration);
+              const minutes = Math.floor(totalSeconds / 60);
+              const seconds = totalSeconds % 60;
+              duration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+            }
 
             // Attempt to extract embedded cover image
             const pictures = metadata.common.picture;
@@ -1162,6 +1194,7 @@ const App = () => {
           album: playlistName, // Set album to playlist name if metadata didn't provide one
           cover: coverUrl,
           url: url,
+          duration,
         };
 
         if (!tempPlaylists[playlistName]) {
