@@ -378,8 +378,10 @@ const Home = ({
   selectPlaylist,
   currentSong,
   currentPlaylistName,
+  playSong, // New prop
 }) => {
-  const playlistNames = Object.keys(playlists);
+  const { "My Songs": individualSongs = [], ...otherPlaylists } = playlists;
+  const playlistNames = Object.keys(otherPlaylists);
   const navigate = useNavigate();
 
   const fallbackCover = PLAYLIST_FALLBACK_SM;
@@ -389,27 +391,30 @@ const Home = ({
     selectPlaylist(name);
   };
 
+  const handleSongClick = (song, index) => {
+    // When an individual song is clicked, we ensure the context is set to "My Songs"
+    // and then play the song from that specific list.
+    selectPlaylist("My Songs");
+    playSong(individualSongs, index);
+  };
+
   return (
-    <div className="flex-grow p-4 md:p-8 overflow-y-auto text-white min-h-full relative">
-      {/* 🔥 Blurred Background Layer */}
+    <div className="flex-grow p-4 md:p-8 overflow-y-auto text-white min-h-full relative custom-scrollbar">
+      {/* Blurred Background Layer */}
       <div
         className="absolute inset-0 bg-gray-900 bg-cover bg-center bg-no-repeat blur-xs opacity-40"
         style={{
-          backgroundImage: `url(${currentSong?.cover || MUSIC_NOTE_FALLBACK})`,
+          backgroundImage: `url(${currentSong?.cover || '/background.jpg'})`,
         }}
       ></div>
 
-      {/* 🔥 Actual Content Layer (NOT blurred) */}
+      {/* Actual Content Layer (NOT blurred) */}
       <div className="relative z-10 mt-8">
-        {playlistNames.length === 0 ? (
+        {playlistNames.length === 0 && individualSongs.length === 0 ? (
+          // Empty state: if there are no folder-based playlists AND no individual songs
           <div className="text-center p-12 border border-gray-800 rounded-xl bg-gray-800/50">
-            <Library
-              size={48}
-              className="mx-auto text-gray-500 mb-4 cursor-pointer"
-            />
-            <h2 className="text-2xl font-semibold mb-2">
-              Your library is empty
-            </h2>
+            <Library size={48} className="mx-auto text-gray-500 mb-4" />
+            <h2 className="text-2xl font-semibold mb-2">Your library is empty</h2>
             <p className="text-gray-400 mb-6">
               Start by loading a music folder from your device.
             </p>
@@ -426,62 +431,93 @@ const Home = ({
             </label>
           </div>
         ) : (
-          <section className="mt-10">
-            <h2 className="text-2xl font-bold mb-6">
-              Recently Played Playlists
-            </h2>
+          <>
+            {/* Section for Playlists (from subfolders) */}
+            {playlistNames.length > 0 && (
+              <section className="mt-10">
+                <h2 className="text-2xl font-bold mb-6">Playlists</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-6">
+                  {playlistNames.map((name) => {
+                    const list = otherPlaylists[name];
+                    const firstSong = list[0];
+                    const cover = firstSong?.cover || fallbackCover;
+                    const isActive = name === currentPlaylistName;
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-6">
-              {playlistNames.map((name) => {
-                const list = playlists[name];
-                const firstSong = list[0];
-                const cover = firstSong?.cover || fallbackCover;
-                const isActive = name === currentPlaylistName;
+                    return (
+                      <div
+                        key={name}
+                        className={`relative bg-white/5 rounded-xl overflow-hidden shadow-md
+                          backdrop-blur-sm border border-white/10 p-3 cursor-pointer
+                          transition-all duration-300 group hover:scale-[1.03] hover:shadow-xl
+                          ${isActive ? "ring-2 ring-green-500" : ""}`}
+                        onClick={() => handlePlaylistClick(name)}
+                      >
+                        <div className="relative">
+                          <img
+                            src={cover}
+                            alt={`${name} Cover`}
+                            className="w-full aspect-square object-cover rounded-lg"
+                            onError={(e) => (e.target.src = fallbackCover)}
+                          />
+                          {isActive && (
+                            <Disc3
+                              size={25}
+                              className="text-green-500 absolute top-3 right-3 animate-spin drop-shadow-lg"
+                            />
+                          )}
+                        </div>
+                        <div className="mt-3 px-1">
+                          <h3 className="text-base font-semibold text-white truncate">{name}</h3>
+                          <p className="text-sm text-gray-400 mt-1">{list.length} tracks</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
-                return (
-                  <div
-                    key={name}
-                    className={`relative bg-white/5 rounded-xl overflow-hidden shadow-md
-              backdrop-blur-sm border border-white/10 p-3 cursor-pointer
-              transition-all duration-300 group hover:scale-[1.03] hover:shadow-xl
-              ${isActive ? "ring-2 ring-green-500" : ""}`}
-                    onClick={() => handlePlaylistClick(name)}
-                  >
-                    {/* Cover Image */}
-                    <div className="relative">
-                      <img
-                        src={cover}
-                        alt={`${name} Cover`}
-                        className="w-full aspect-square object-cover rounded-lg transition-all duration-300 group-hover:opacity-90"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = fallbackCover;
-                        }}
-                      />
+            {/* Section for Individual Songs (from root folder) */}
+            {individualSongs.length > 0 && (
+              <section className="mt-10">
+                <h2 className="text-2xl font-bold mb-6">Songs</h2>
+                <div className="flex flex-col gap-1 pb-10">
+                  {individualSongs.map((song, idx) => {
+                    const isCurrent =
+                      currentPlaylistName === "My Songs" &&
+                      song.url === currentSong?.url;
 
-                      {/* Active Indicator */}
-                      {isActive && (
-                        <Disc3
-                          size={25}
-                          className="text-green-500 absolute top-3 right-3 cursor-pointer animate-spin  drop-shadow-lg"
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => handleSongClick(song, idx)}
+                        className={`grid grid-cols-[50px_1fr_80px] items-center p-2 rounded-lg cursor-pointer transition-colors duration-200
+                          ${isCurrent ? "bg-gray-700/50" : "hover:bg-gray-800/70"}`}
+                      >
+                        <img
+                          src={song.cover}
+                          alt="cover"
+                          className="w-10 h-10 rounded-md object-cover"
+                          onError={(e) => (e.target.src = MUSIC_NOTE_FALLBACK)}
                         />
-                      )}
-                    </div>
-
-                    {/* Text Content */}
-                    <div className="mt-3 px-1">
-                      <h3 className="text-base font-semibold text-white truncate">
-                        {name}
-                      </h3>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {list.length} tracks
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                        <div className="truncate ml-4">
+                          <p className={`text-base font-medium truncate ${isCurrent ? "text-white" : "text-gray-100"}`}>
+                            {song.title}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {song.artist || "Unknown Artist"}
+                          </p>
+                        </div>
+                        <div className="text-sm text-gray-400 text-right">
+                          {song.duration}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -1119,7 +1155,6 @@ const App = () => {
 
   // FOLDER SELECTION HANDLER (UPDATED with user's core logic and robust fallback)
   const handleFolderSelect = async (e) => {
-    // This function handles loading audio files from a user-selected folder
     const files = Array.from(e.target.files).filter((file) =>
       file.type.includes("audio")
     );
@@ -1127,15 +1162,49 @@ const App = () => {
     const tempPlaylists = {};
     const objectUrls = []; // Track URLs to revoke later
 
+    // --- New Logic: Pre-process to understand the directory structure ---
+    const dirPaths = new Set();
+    for (const file of files) {
+      const path = file.webkitRelativePath || file.name;
+      const lastSlash = path.lastIndexOf('/');
+      if (lastSlash > -1) {
+        // Add the parent directory of the file to our set of directories
+        dirPaths.add(path.substring(0, lastSlash));
+      }
+    }
+
     await Promise.all(
       files.map(async (file) => {
-        const pathParts = (file.webkitRelativePath || file.name).split("/");
+        const path = file.webkitRelativePath || file.name;
+        const lastSlash = path.lastIndexOf('/');
+        let playlistName;
 
-        // The playlist name is the folder name (second to last part in path) or the file name if no folder
-        const playlistName =
-          pathParts.length > 1 && pathParts[pathParts.length - 2] !== ""
-            ? pathParts[pathParts.length - 2]
-            : file.name.replace(/\.[^/.]+$/, "");
+        if (lastSlash === -1) {
+          // File is at the root of the selection (e.g., 'song.mp3')
+          playlistName = "My Songs";
+        } else {
+          const parentDir = path.substring(0, lastSlash); // e.g., 'P@' or 'P@/Innovative Prosperity'
+
+          // Check if this directory contains any other directories.
+          let isContainer = false;
+          for (const otherDir of dirPaths) {
+            if (otherDir !== parentDir && otherDir.startsWith(parentDir + '/')) {
+              isContainer = true;
+              break;
+            }
+          }
+
+          if (isContainer) {
+            // This directory contains other directories, so its direct files are "loose".
+            // Group them into the default playlist.
+            playlistName = "My Songs";
+          } else {
+            // This is a "leaf" directory containing only songs. Treat it as a playlist.
+            // Use the directory's own name for the playlist.
+            const nameParts = parentDir.split('/');
+            playlistName = nameParts[nameParts.length - 1];
+          }
+        }
 
         // Initialize metadata placeholders
         let coverUrl = null;
@@ -1292,6 +1361,7 @@ const App = () => {
                   selectPlaylist={selectPlaylist}
                   currentSong={currentPlayingSong}
                   currentPlaylistName={currentPlaylistName}
+                  playSong={playSong}
                 />
               }
             />
