@@ -3,847 +3,46 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  useMemo,
 } from "react";
 import { Buffer } from "buffer";
 import {
   Routes,
   Route,
-  useParams,
   useNavigate,
-  Link,
-  useLocation, // Added useLocation for context
+  useLocation,
 } from "react-router-dom";
-import {
-  Library,
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Repeat,
-  Shuffle,
-  Volume2,
-  ListMusic,
-  Heart,
-  Music,
-  Disc3,
-  Clock,
-  MoreHorizontal,
-} from "lucide-react";
-// Since this is a single file, we assume music-metadata-browser is available globally
-// or mock the dependency. We will assume the real import is intended here.
-// NOTE: For live environments, ensure 'music-metadata-browser' is bundled.
 import { parseBlob } from "music-metadata-browser";
+import RightPlayerPanel from "./components/mainUI/RightPlayerPanel";
+import Navbar from "./components/mainUI/Navbar";
+import Home from "./components/mainUI/Home";
+import PlayerPage from "./components/mainUI/PlayerPage";
+import { generateSvgCover } from "./components/mainUI/utils";
 
-// Polyfill for Buffer needed by music-metadata-browser (mocked for this environment)
 window.Buffer = Buffer;
 
-// --- FALLBACK COVER GENERATION UTILITIES ---
-
-/**
- * Generates a self-contained SVG Data URL for placeholder images.
- * This is used as a fallback if the audio file has no embedded cover art,
- * ensuring covers always display, regardless of CSP rules.
- * @param {string} text The character/text to display (e.g., first letter of the song title).
- * @param {string} baseColor The background hex color.
- * @returns {string} The SVG Data URL.
- */
-const generateSvgCover = (text, baseColor = "333333") => {
-  const titleChar = encodeURIComponent(text.charAt(0).toUpperCase());
-  const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
-        <rect width="150" height="150" rx="10" ry="10" fill="#${baseColor}"/>
-        <text x="75" y="100" font-size="70" font-family="sans-serif" fill="#ffffff" text-anchor="middle">${titleChar}</text>
-    </svg>`;
-  return `data:image/svg+xml;base64,${btoa(svgContent)}`;
-};
-
-// --- HELPER COMPONENTS ---
-
-// Fallback covers (Data URLs) defined globally for consistency
-const MUSIC_NOTE_FALLBACK =
-  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDEwMCAxMDAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjMWRiOTU0Ii8+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtc2l6ZT0iNDAiIGZvbnQtZmFtaWx5PSJhcmlhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiI+4vzwvdGV4dD48L3N2Zz4=";
-const PLAYLIST_FALLBACK_SM =
-  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIHJ4PSIxMCIgcnk9IjEwIiBmaWxsPSIjMjIyMjIyIi8+PHRleHQgeD0iNzUlIiB5PSI4NSUiIGZvbnQtc2l6ZT0iMzUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRkZGRkZGIj5QTEFZTElTVDwvdGV4dD48L3N2Zz4=";
-const PLAYLIST_FALLBACK_LG =
-  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMzAwIDMwMCI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxNSIgcnk9IjE1IiBmaWxsPSIjMWRiOTU0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmZmZmIj5QTEFZTElTVDwvdGV4dD48L3N2Zz4=";
-
-// 1. RightPlayerPanel (NEW - Combines Player and Queue)
-const RightPlayerPanel = ({
-  currentSong,
-  isPlaying,
-  duration,
-  currentTime,
-  onPlayPause,
-  onPrev,
-  onNext,
-  onSeek,
-  audioRef,
-  isShuffle,
-  toggleShuffle,
-  repeatMode,
-  toggleRepeat,
-  currentPlaybackList,
-}) => {
-  const formatTime = (seconds) => {
-    if (isNaN(seconds) || seconds === 0) return "0:00";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
-
-  const handleProgressChange = (e) => {
-    const newTime = parseFloat(e.target.value);
-    onSeek(newTime);
-  };
-
-  const currentCover = currentSong?.cover || MUSIC_NOTE_FALLBACK;
-
-  const currentSongIndex = useMemo(
-    () =>
-      currentPlaybackList.findIndex((song) => song.url === currentSong?.url),
-    [currentPlaybackList, currentSong]
-  );
-
-  const upNext =
-    currentSongIndex >= 0
-      ? currentPlaybackList.slice(currentSongIndex + 1)
-      : currentPlaybackList;
-  const fallbackCover = MUSIC_NOTE_FALLBACK;
-
-  return (
-    <div className="w-80 relative flex flex-shrink-0  flex-col h-full overflow-y-auto custom-scrollbar border-l border-gray-900">
-      {/* 🔥 Blurred background cover */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 blur-lg"
-        style={{
-          backgroundImage: `url(${currentCover || fallbackCover})`,
-        }}
-      ></div>
-
-      {/* Content stays sharp */}
-      <div className="relative z-10  backdrop-blur-none p-4 flex flex-col space-y-4 min-h-full">
-        {/* Player Section */}
-        {currentSong ? (
-          <div className="flex flex-col text-white space-y-4">
-            <img
-              src={currentCover}
-              alt="Cover"
-              className="w-full aspect-square rounded-lg shadow-lg"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = fallbackCover;
-              }}
-            />
-
-            <div className="text-center">
-              <h2 className="text-xl font-bold truncate">
-                {currentSong.title}
-              </h2>
-              <p className="text-sm text-gray-300 truncate">
-                {currentSong.artist}
-              </p>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full pt-2">
-              <input
-                type="range"
-                min="0"
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleProgressChange}
-                className="w-full h-1 appearance-none rounded-lg"
-                style={{
-                  background: `linear-gradient(to right,
-      oklch(72.3% 0.219 149.579) ${(currentTime / (duration || 1)) * 100}%,
-      #ffffff ${(currentTime / (duration || 1)) * 100}%
-    )`,
-                }}
-              />
-
-              <div className="flex justify-between text-xs text-gray-300 mt-1">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-center space-x-6 pt-2">
-              <button
-                onClick={toggleShuffle}
-                className={`transition-colors ${
-                  isShuffle
-                    ? "text-green-500"
-                    : "text-gray-300 hover:text-white"
-                }`}
-              >
-                <Shuffle size={20} className="cursor-pointer" />
-              </button>
-
-              <button
-                onClick={onPrev}
-                className="text-gray-200 hover:text-white"
-              >
-                <SkipBack
-                  size={24}
-                  fill="currentColor"
-                  className="cursor-pointer"
-                />
-              </button>
-
-              <button
-                onClick={onPlayPause}
-                className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-black shadow-lg hover:scale-105 transition-transform"
-              >
-                {isPlaying ? (
-                  <Pause
-                    size={28}
-                    fill="currentColor"
-                    className="cursor-pointer"
-                  />
-                ) : (
-                  <Play
-                    size={28}
-                    fill="currentColor"
-                    className="ml-1 cursor-pointer"
-                  />
-                )}
-              </button>
-
-              <button
-                onClick={onNext}
-                className="text-gray-200 hover:text-white"
-              >
-                <SkipForward
-                  size={24}
-                  fill="currentColor"
-                  className="cursor-pointer"
-                />
-              </button>
-
-              <button
-                onClick={toggleRepeat}
-                className={`transition-colors ${
-                  repeatMode !== "off"
-                    ? "text-green-500"
-                    : "text-gray-300 hover:text-white"
-                }`}
-              >
-                <Repeat size={20} className="cursor-pointer" />
-              </button>
-            </div>
-
-            {/* Volume */}
-            <div className="flex items-center  space-x-2 pt-2">
-              {/* Secondary Controls */}
-              <div className="flex items-center gap-3">
-                <button className="text-gray-300 hover:text-green-500">
-                  <Heart size={15} />
-                </button>
-
-                <button className="text-gray-300 hover:text-white">
-                  <ListMusic size={15} />
-                </button>
-
-                <button className="text-gray-300 hover:text-white">
-                  <Clock size={15} />
-                </button>
-
-                <button className="text-gray-300 hover:text-white">
-                  <MoreHorizontal size={15} />
-                </button>
-              </div>
-              <Volume2 size={25} className="text-gray-300" />
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                defaultValue="1"
-                onChange={(e) => {
-                  const vol = parseFloat(e.target.value);
-                  audioRef.current.volume = vol;
-                }}
-                className="w-full h-1 appearance-none rounded-lg cursor-pointer"
-                style={{
-                  background: `linear-gradient(to right,
-      oklch(72.3% 0.219 149.579) ${(audioRef.current?.volume || 1) * 100}%,
-      #ffffff ${(audioRef.current?.volume || 1) * 100}%
-    )`,
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center">
-            <Music size={48} />
-            <p className="mt-4">No song selected</p>
-            <p className="text-xs">Load music to start.</p>
-          </div>
-        )}
-
-        {/* Queue Section */}
-        <div className="border-t border-gray-800 pt-4 flex-grow flex flex-col min-h-0">
-          <h3 className="text-lg font-bold mb-2 text-white">Up Next</h3>
-
-          <div className="space-y-2 overflow-y-auto custom-scrollbar flex-grow">
-            {upNext.length > 0 ? (
-              upNext.slice(0, 20).map((song, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 p-2 rounded-md hover:bg-black/40 transition cursor-pointer group"
-                >
-                  <img
-                    src={song.cover || fallbackCover}
-                    className="w-8 h-8 rounded-md"
-                    onError={(e) => (e.target.src = fallbackCover)}
-                  />
-
-                  <div className="truncate flex-grow">
-                    <p className="text-sm text-gray-200 group-hover:text-white">
-                      {song.title}
-                    </p>
-                    <p className="text-xs text-gray-400">{song.artist}</p>
-                  </div>
-
-                  <span className="text-xs text-gray-400">{song.duration}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-400 text-center p-4">
-                Queue empty
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Slider Thumb */}
-      <style>{`
-    .player-progress-slider::-webkit-slider-thumb {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #1db954;
-        margin-top: -4px;
-        cursor: pointer;
-    }
-  `}</style>
-    </div>
-  );
-};
-
-// 2. Navbar Component (NEW - Replaces Sidebar)
-const Navbar = ({ onFolderSelect }) => {
-  const navigate = useNavigate();
-  return (
-    <nav
-      className={`h-16 p-2 px-6 flex items-center justify-between fixed w-full top-0 z-30 
-    ${window.location.pathname === "/" ? "" : "backdrop-blur-md"}
-    `}
-    >
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center space-x-2"
-        >
-          <Music size={32} className="text-green-500 cursor-pointer" />
-          <span className="text-xl font-extrabold text-white hidden sm:inline">
-            Local Music
-          </span>
-        </button>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <label className="block py-2 px-4 bg-green-600 text-white rounded-full cursor-pointer hover:bg-green-700 transition-colors font-semibold text-sm shadow-md">
-          + Load Folder
-          <input
-            type="file"
-            webkitdirectory="true"
-            directory="true"
-            multiple
-            onChange={onFolderSelect}
-            className="hidden"
-          />
-        </label>
-      </div>
-    </nav>
-  );
-};
-
-// 5. Home Component (Main Content)
-const Home = ({
-  playlists,
-  onFolderSelect,
-  selectPlaylist,
-  currentSong,
-  currentPlaylistName,
-  playSong, // New prop
-}) => {
-  const { "My Songs": individualSongs = [], ...otherPlaylists } = playlists;
-  const playlistNames = Object.keys(otherPlaylists);
-  const navigate = useNavigate();
-
-  const fallbackCover = PLAYLIST_FALLBACK_SM;
-
-  const handlePlaylistClick = (name) => {
-    navigate(`/play/${encodeURIComponent(name)}`);
-    selectPlaylist(name);
-  };
-
-  const handleSongClick = (song, index) => {
-    // When an individual song is clicked, we ensure the context is set to "My Songs"
-    // and then play the song from that specific list.
-    selectPlaylist("My Songs");
-    playSong(individualSongs, index);
-  };
-
-  return (
-    <div className="flex-grow p-4 md:p-8 overflow-y-auto text-white min-h-full relative custom-scrollbar">
-      {/* Blurred Background Layer */}
-      <div
-        className="absolute inset-0 bg-gray-900 bg-cover bg-center bg-no-repeat blur-xs opacity-40"
-        style={{
-          backgroundImage: `url(${currentSong?.cover || '/background.jpg'})`,
-        }}
-      ></div>
-
-      {/* Actual Content Layer (NOT blurred) */}
-      <div className="relative z-10 mt-8">
-        {playlistNames.length === 0 && individualSongs.length === 0 ? (
-          // Empty state: if there are no folder-based playlists AND no individual songs
-          <div className="text-center p-12 border border-gray-800 rounded-xl bg-gray-800/50">
-            <Library size={48} className="mx-auto text-gray-500 mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">Your library is empty</h2>
-            <p className="text-gray-400 mb-6">
-              Start by loading a music folder from your device.
-            </p>
-            <label className="inline-block py-3 px-8 bg-green-600 text-white rounded-full cursor-pointer hover:bg-green-700 transition-colors font-bold shadow-2xl">
-              Load Music Folder
-              <input
-                type="file"
-                webkitdirectory="true"
-                directory="true"
-                multiple
-                onChange={onFolderSelect}
-                className="hidden"
-              />
-            </label>
-          </div>
-        ) : (
-          <>
-            {/* Section for Playlists (from subfolders) */}
-            {playlistNames.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-bold mb-6">Playlists</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-6">
-                  {playlistNames.map((name) => {
-                    const list = otherPlaylists[name];
-                    const firstSong = list[0];
-                    const cover = firstSong?.cover || fallbackCover;
-                    const isActive = name === currentPlaylistName;
-
-                    return (
-                      <div
-                        key={name}
-                        className={`relative bg-white/5 rounded-xl overflow-hidden shadow-md
-                          backdrop-blur-sm border border-white/10 p-3 cursor-pointer
-                          transition-all duration-300 group hover:scale-[1.03] hover:shadow-xl
-                          ${isActive ? "ring-2 ring-green-500" : ""}`}
-                        onClick={() => handlePlaylistClick(name)}
-                      >
-                        <div className="relative">
-                          <img
-                            src={cover}
-                            alt={`${name} Cover`}
-                            className="w-full aspect-square object-cover rounded-lg"
-                            onError={(e) => (e.target.src = fallbackCover)}
-                          />
-                          {isActive && (
-                            <Disc3
-                              size={25}
-                              className="text-green-500 absolute top-3 right-3 animate-spin drop-shadow-lg"
-                            />
-                          )}
-                        </div>
-                        <div className="mt-3 px-1">
-                          <h3 className="text-base font-semibold text-white truncate">{name}</h3>
-                          <p className="text-sm text-gray-400 mt-1">{list.length} tracks</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Section for Individual Songs (from root folder) */}
-            {individualSongs.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-bold mb-6">Songs</h2>
-                <div className="flex flex-col gap-1 pb-10">
-                  {individualSongs.map((song, idx) => {
-                    const isCurrent =
-                      currentPlaylistName === "My Songs" &&
-                      song.url === currentSong?.url;
-
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => handleSongClick(song, idx)}
-                        className={`grid grid-cols-[50px_1fr_80px] items-center p-2 rounded-lg cursor-pointer transition-colors duration-200
-                          ${isCurrent ? "bg-gray-700/50" : "hover:bg-gray-800/70"}`}
-                      >
-                        <img
-                          src={song.cover}
-                          alt="cover"
-                          className="w-10 h-10 rounded-md object-cover"
-                          onError={(e) => (e.target.src = MUSIC_NOTE_FALLBACK)}
-                        />
-                        <div className="truncate ml-4">
-                          <p className={`text-base font-medium truncate ${isCurrent ? "text-white" : "text-gray-100"}`}>
-                            {song.title}
-                          </p>
-                          <p className="text-xs text-gray-400 truncate">
-                            {song.artist || "Unknown Artist"}
-                          </p>
-                        </div>
-                        <div className="text-sm text-gray-400 text-right">
-                          {song.duration}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// 6. PlayerPage Component (Main Content)
-const PlayerPage = ({
-  playlists,
-  currentPlaylistName,
-  currentSong,
-  playSong,
-  selectPlaylist,
-  isShuffle,
-  shuffledSongMap,
-  onPlayPause,
-  isPlaying,
-  currentSongIndex,
-}) => {
-  const { pname } = useParams();
-  const navigate = useNavigate();
-
-  const playlistName = decodeURIComponent(pname);
-  const songList = playlists[playlistName] || [];
-
-  // --- Derived Data ---
-  const mainSong = songList[0];
-  const fallbackCover = PLAYLIST_FALLBACK_LG;
-  const mainCover = mainSong?.cover || fallbackCover;
-  const mainArtist = mainSong?.artist || "Various Artists";
-
-  const totalDurationInfo = useMemo(() => {
-    const totalTracks = songList.length;
-    if (totalTracks === 0) return "0 tracks";
-    const totalMinutes = totalTracks * 3.5; // Placeholder avg time
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-    return `${totalTracks} songs, approx ${hours}h ${minutes}m`;
-  }, [songList.length]);
-
-  const handlePlayButtonClick = useCallback(() => {
-    if (songList.length > 0 && playSong) {
-      selectPlaylist(playlistName);
-
-      const listToPlay =
-        isShuffle && shuffledSongMap[playlistName]
-          ? shuffledSongMap[playlistName]
-          : songList;
-
-      // If the current playlist is playing the current song, just toggle pause
-      if (currentPlaylistName === playlistName && currentSong && isPlaying) {
-        onPlayPause();
-        return;
-      }
-
-      // If the playlist is already selected and we are paused, resume from the current index (or start at 0)
-      const indexToPlay =
-        currentPlaylistName === playlistName && currentSong
-          ? currentSongIndex
-          : 0;
-
-      playSong(listToPlay, indexToPlay);
-    }
-  }, [
-    songList,
-    playSong,
-    selectPlaylist,
-    playlistName,
-    currentPlaylistName,
-    currentSong,
-    onPlayPause,
-    isShuffle,
-    shuffledSongMap,
-    isPlaying,
-    currentSongIndex,
-  ]);
-
-  const handleSongClick = useCallback(
-    (songData, index) => {
-      if (playSong) {
-        selectPlaylist(playlistName);
-
-        const listToPlay =
-          isShuffle && shuffledSongMap[playlistName]
-            ? shuffledSongMap[playlistName]
-            : songList;
-
-        let actualPlaybackIndex = index;
-
-        if (isShuffle && shuffledSongMap[playlistName]) {
-          // Find the index of the clicked song in the shuffled list
-          actualPlaybackIndex = listToPlay.findIndex(
-            (s) => s.url === songData.url
-          );
-          actualPlaybackIndex =
-            actualPlaybackIndex >= 0 ? actualPlaybackIndex : index;
-        }
-
-        playSong(listToPlay, actualPlaybackIndex);
-      }
-    },
-    [
-      songList,
-      playSong,
-      selectPlaylist,
-      playlistName,
-      isShuffle,
-      shuffledSongMap,
-    ]
-  );
-
-  if (!playlistName || songList.length === 0) {
-    return (
-      <div className="bg-gray-900 text-white min-h-full flex items-center justify-center p-8">
-        <h2 className="text-3xl font-bold">Playlist Not Found</h2>
-      </div>
-    );
-  }
-
-  const isCurrentPlaylistPlaying =
-    currentPlaylistName === playlistName && isPlaying;
-
-  return (
-    <div className="bg-gray-900 min-h-full text-white relative flex flex-col">
-      {/* 🔥 Blurred Dynamic Header Background */}
-      <div className="absolute top-0 left-0 right-0 h-80 overflow-hidden">
-        <div
-          className="w-full h-full bg-center bg-cover scale-110 blur-xl opacity-60"
-          style={{
-            backgroundImage: `url(${mainCover})`,
-          }}
-        ></div>
-      </div>
-
-      {/* Scrollable Content Area */}
-      <div className="relative z-10 flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
-        {/* Album / Playlist Header */}
-        <section className="flex flex-col md:flex-row items-center md:items-end md:space-x-6 mb-12 mt-4 md:mt-12">
-          {/* Cover Art */}
-          <img
-            src={mainCover}
-            alt={`${playlistName} Cover`}
-            className="w-48 h-48 md:w-56 md:h-56 object-cover rounded-lg shadow-2xl mb-6 md:mb-0"
-            onError={(e) => {
-              console.error("PlayerPage image load error", e);
-              e.target.onerror = null;
-              e.target.src = fallbackCover;
-            }}
-          />
-
-          {/* Info Block */}
-          <div className="text-center md:text-left">
-            <p className="text-sm uppercase font-semibold text-gray-200 mb-2">
-              Playlist
-            </p>
-
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white mb-4 leading-none">
-              {playlistName}
-            </h1>
-
-            <div className="flex flex-wrap justify-center md:justify-start items-center text-gray-300 text-sm sm:text-base space-x-3 mt-4">
-              <p className="font-bold text-white">{mainArtist}</p>
-              <span>•</span>
-              <p>{totalDurationInfo}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Controls Section */}
-        <div className="py-6 flex items-center space-x-6">
-          {/* Play/Pause */}
-          <button
-            onClick={handlePlayButtonClick}
-            className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/50 hover:bg-green-400 transition-transform hover:scale-105 text-black"
-          >
-            {isCurrentPlaylistPlaying ? (
-              <Pause size={28} fill="currentColor" className="cursor-pointer" />
-            ) : (
-              <Play
-                size={28}
-                fill="currentColor"
-                className="ml-0.5 cursor-pointer"
-              />
-            )}
-          </button>
-
-          {/* Heart */}
-          <Heart
-            size={32}
-            className="text-gray-400 hover:text-white cursor-pointer transition-colors"
-          />
-
-          {/* More */}
-          <ListMusic
-            size={32}
-            className="text-gray-400 hover:text-white cursor-pointer transition-colors"
-            title="More Options"
-          />
-        </div>
-
-        {/* Song List */}
-        <div className="pt-4 pb-10 custom-scrollbar">
-          {/* Table Header */}
-          <div className="grid grid-cols-[30px_1fr_150px_80px] text-gray-400 text-xs uppercase font-semibold border-b border-gray-700 pb-2 mb-2 px-2">
-            <div className="text-center">#</div>
-            <div className="ml-3">Title</div>
-            <div className="hidden md:block">Album</div>
-            <div className="flex items-center justify-end">
-              <Clock size={16} />
-            </div>
-          </div>
-
-          {songList.map((song, idx) => {
-            const isCurrent =
-              currentPlaylistName === playlistName &&
-              song.url === currentSong?.url;
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleSongClick(song, idx)}
-                className={`grid grid-cols-[30px_1fr_150px_80px] mb-1 items-center py-2 px-2 rounded-lg cursor-pointer transition-colors duration-200
-              ${
-                isCurrent
-                  ? "bg-gray-700/50 shadow-inner"
-                  : "hover:bg-gray-800/70"
-              }`}
-              >
-                {/* Index */}
-                <span
-                  className={`text-sm font-mono text-center ${
-                    isCurrent ? "text-green-400" : "text-gray-400"
-                  }`}
-                >
-                  {isCurrent ? (
-                    <Play
-                      size={14}
-                      fill="currentColor"
-                      className="mx-auto cursor-pointer"
-                    />
-                  ) : (
-                    idx + 1
-                  )}
-                </span>
-
-                {/* Title */}
-                <div className="truncate flex gap-2 ml-3">
-                  <img src={song?.cover} width={"50px"} alt="cover" className="rounded-md" />
-                  <div>
-                    <p
-                      className={`text-base font-medium truncate ${
-                        isCurrent ? "text-white" : "text-gray-100"
-                      }`}
-                    >
-                      {song.title}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {song.artist || "Unknown Artist"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Album */}
-                <div className="text-sm text-gray-400 truncate hidden md:block">
-                  {song.album || playlistName}
-                </div>
-
-                {/* Duration */}
-                {console.log("Rendering song duration for", song)}
-                <div className="text-sm text-gray-400 text-right">{song?.duration}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Scrollbar + Extra CSS */}
-      <style>{`
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #121212; 
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #4b5563; 
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #6b7280; 
-    }
-  `}</style>
-    </div>
-  );
-};
-
-// 7. Main App Component
+// Main App Component
 const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- STATE ---
   const [playlists, setPlaylists] = useState({});
   const [currentPlaylistName, setCurrentPlaylistName] = useState(null);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0); // Index in the current playback list
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [currentPlayingSong, setCurrentPlayingSong] = useState(null);
 
-  // Playback Mode States
   const [isShuffle, setIsShuffle] = useState(false);
-  const [repeatMode, setRepeatMode] = useState("off"); // 'off', 'all', 'one'
-  const [shuffledSongMap, setShuffledSongMap] = useState({}); // { playlistName: [shuffled song list] }
+  const [repeatMode, setRepeatMode] = useState("off");
+  const [shuffledSongMap, setShuffledSongMap] = useState({});
 
-  // Player State
   const audioRef = useRef(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // --- DERIVED STATE ---
   const playlistNames = Object.keys(playlists);
-  const currentSongListOriginal = playlists[currentPlaylistName] || [];
-  const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName); // Used for playlist transitions
+  const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
+  const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
 
-  // --- PLAYBACK UTILITIES ---
-
-  // Helper to get the list currently used for playback (original or shuffled)
   const getPlaybackList = useCallback(() => {
     if (
       isShuffle &&
@@ -862,7 +61,6 @@ const App = () => {
 
   const currentPlaybackList = getPlaybackList();
 
-  // Fisher-Yates shuffle algorithm
   const createShuffledList = useCallback((list) => {
     const array = [...list];
     for (let i = array.length - 1; i > 0; i--) {
@@ -872,7 +70,6 @@ const App = () => {
     return array;
   }, []);
 
-  // 2. Play Song (Centralized logic to load and play audio)
   const playSong = useCallback((songList, index) => {
     const songToPlay = songList[index];
 
@@ -890,7 +87,6 @@ const App = () => {
       audioRef.current.load();
     }
 
-    // Use a small delay for reliable playback start after loading
     setTimeout(() => {
       audioRef.current
         .play()
@@ -899,9 +95,6 @@ const App = () => {
     }, 100);
   }, []);
 
-  // --- HANDLERS ---
-
-  // 1. Core Playback Toggle
   const onPlayPause = useCallback(() => {
     if (currentPlayingSong) {
       if (isPlaying) {
@@ -910,7 +103,6 @@ const App = () => {
       } else {
         const currentList = getPlaybackList();
         if (!audioRef.current.src || audioRef.current.paused) {
-          // If audio hasn't been loaded yet or is paused, load and play the current song index
           playSong(currentList, currentSongIndex);
         } else {
           audioRef.current
@@ -920,7 +112,6 @@ const App = () => {
         }
       }
     } else if (currentPlaybackList.length > 0) {
-      // If nothing is loaded, start the first song
       playSong(currentPlaybackList, 0);
     }
   }, [
@@ -932,15 +123,12 @@ const App = () => {
     getPlaybackList,
   ]);
 
-  // New: Toggle Shuffle Mode
   const toggleShuffle = useCallback(() => {
     if (!currentPlaylistName || currentSongListOriginal.length === 0) return;
 
     if (isShuffle) {
-      // Turning OFF shuffle: Revert to original list index
       setIsShuffle(false);
 
-      // Find the current song's index in the original list
       const currentIndexInOriginal = currentSongListOriginal.findIndex(
         (s) => s.url === currentPlayingSong?.url
       );
@@ -948,7 +136,6 @@ const App = () => {
         currentIndexInOriginal >= 0 ? currentIndexInOriginal : 0
       );
 
-      // Restart playback in the context of the original list if playing
       if (currentPlayingSong && isPlaying) {
         playSong(
           currentSongListOriginal,
@@ -956,7 +143,6 @@ const App = () => {
         );
       }
     } else {
-      // Turning ON shuffle: Create a new shuffled list for this playlist
       const shuffledList = createShuffledList(currentSongListOriginal);
 
       setShuffledSongMap((prev) => ({
@@ -965,7 +151,6 @@ const App = () => {
       }));
       setIsShuffle(true);
 
-      // Find the current song's index in the new shuffled list
       const currentIndexInShuffled = shuffledList.findIndex(
         (s) => s.url === currentPlayingSong?.url
       );
@@ -973,7 +158,6 @@ const App = () => {
         currentIndexInShuffled >= 0 ? currentIndexInShuffled : 0
       );
 
-      // Restart playback in the context of the new shuffled list if playing
       if (currentPlayingSong && isPlaying) {
         playSong(
           shuffledList,
@@ -991,28 +175,25 @@ const App = () => {
     playSong,
   ]);
 
-  // New: Toggle Repeat Mode
   const toggleRepeat = useCallback(() => {
     setRepeatMode((prevMode) => {
       switch (prevMode) {
         case "off":
-          return "all"; // off -> repeat all
+          return "all";
         case "all":
-          return "one"; // repeat all -> repeat one
+          return "one";
         case "one":
         default:
-          return "off"; // repeat one -> off
+          return "off";
       }
     });
   }, []);
 
   const selectPlaylist = useCallback((playlistName) => {
-    // Only change playlist name, actual playing song change happens in playSong
     setCurrentPlaylistName(playlistName);
     setCurrentSongIndex(0);
   }, []);
 
-  // 3.  (Handles song end and playlist transitions)
   const onNext = useCallback(() => {
     const currentList = getPlaybackList();
     if (currentList.length === 0) return;
@@ -1020,38 +201,30 @@ const App = () => {
     const currentMaxIndex = currentList.length - 1;
 
     if (repeatMode === "one" && currentPlayingSong) {
-      // Repeat One: play the same song again
       playSong(currentList, currentSongIndex);
       return;
     }
 
     if (currentSongIndex < currentMaxIndex) {
-      // Case A: Not the last song in the current list -> Go to next song
       const nextIndex = currentSongIndex + 1;
       playSong(currentList, nextIndex);
     } else if (repeatMode === "all") {
-      // Case B: Last song, Repeat All is ON -> Loop back to the first song
       playSong(currentList, 0);
     } else {
-      // Case C: Last song, Repeat is OFF -> Try to go to the next playlist
-
       const nextPlaylistIndex = currentPlaylistIndex + 1;
 
       if (nextPlaylistIndex < playlistNames.length) {
         const nextPlaylistName = playlistNames[nextPlaylistIndex];
         const nextSongListOriginal = playlists[nextPlaylistName];
 
-        // 1. Update the current playlist state
         setCurrentPlaylistName(nextPlaylistName);
 
-        // 2. Determine song list (shuffled or original)
         let songListToPlay = nextSongListOriginal;
         let indexToPlay = 0;
 
         if (isShuffle) {
           let shuffledList = shuffledSongMap[nextPlaylistName];
           if (!shuffledList) {
-            // Create shuffled list if it doesn't exist for the new playlist
             shuffledList = createShuffledList(nextSongListOriginal);
             setShuffledSongMap((prev) => ({
               ...prev,
@@ -1061,14 +234,8 @@ const App = () => {
           songListToPlay = shuffledList;
         }
 
-        // Must use setTimeout or navigate to trigger state change and re-render.
-        // Using playSong directly after setting name is fine as playSong uses the passed list.
         playSong(songListToPlay, indexToPlay);
-
-        // Navigate to update the UI
-        // navigate(`/play/${encodeURIComponent(nextPlaylistName)}`);
       } else {
-        // Case D: Reached the end of all music (and not repeating all)
         setIsPlaying(false);
         setCurrentPlayingSong(null);
         setCurrentTime(0);
@@ -1090,25 +257,20 @@ const App = () => {
     navigate,
   ]);
 
-  // 4. Skip Previous (Refined to implement "restart song" behavior)
   const onPrev = useCallback(() => {
     const currentList = getPlaybackList();
 
-    // Standard Music Player behavior: if currentTime > 3 seconds, restart the song
     if (audioRef.current.currentTime > 3) {
       playSong(currentList, currentSongIndex);
       return;
     }
 
     if (currentSongIndex > 0) {
-      // Go to previous song in the current list
       const prevIndex = currentSongIndex - 1;
       playSong(currentList, prevIndex);
     } else if (repeatMode === "all") {
-      // If at the start and Repeat All is ON, loop to the end of the current list
       playSong(currentList, currentList.length - 1);
     } else if (currentSongIndex === 0 && currentPlaylistIndex > 0) {
-      // If at the start, repeat is OFF, and not the first playlist: Go to the last song of the previous playlist
       const prevPlaylistIndex = currentPlaylistIndex - 1;
       const prevPlaylistName = playlistNames[prevPlaylistIndex];
       const prevSongListOriginal = playlists[prevPlaylistName];
@@ -1116,7 +278,6 @@ const App = () => {
       if (prevSongListOriginal && prevSongListOriginal.length > 0) {
         setCurrentPlaylistName(prevPlaylistName);
 
-        // Determine which list to play from (original or shuffled)
         let songListToPlay = prevSongListOriginal;
         if (isShuffle && shuffledSongMap[prevPlaylistName]) {
           songListToPlay = shuffledSongMap[prevPlaylistName];
@@ -1124,12 +285,8 @@ const App = () => {
 
         const prevSongIndex = songListToPlay.length - 1;
         playSong(songListToPlay, prevSongIndex);
-
-        // Navigate to update the UI
-        // navigate(`/play/${encodeURIComponent(prevPlaylistName)}`);
       }
     } else {
-      // If at the start and can't go back, restart the current song
       playSong(currentList, 0);
     }
   }, [
@@ -1145,7 +302,6 @@ const App = () => {
     navigate,
   ]);
 
-  // 5. Seek Handler
   const onSeek = useCallback((time) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
@@ -1153,22 +309,19 @@ const App = () => {
     }
   }, []);
 
-  // FOLDER SELECTION HANDLER (UPDATED with user's core logic and robust fallback)
   const handleFolderSelect = async (e) => {
     const files = Array.from(e.target.files).filter((file) =>
       file.type.includes("audio")
     );
 
     const tempPlaylists = {};
-    const objectUrls = []; // Track URLs to revoke later
+    const objectUrls = [];
 
-    // --- New Logic: Pre-process to understand the directory structure ---
     const dirPaths = new Set();
     for (const file of files) {
       const path = file.webkitRelativePath || file.name;
       const lastSlash = path.lastIndexOf('/');
       if (lastSlash > -1) {
-        // Add the parent directory of the file to our set of directories
         dirPaths.add(path.substring(0, lastSlash));
       }
     }
@@ -1180,12 +333,10 @@ const App = () => {
         let playlistName;
 
         if (lastSlash === -1) {
-          // File is at the root of the selection (e.g., 'song.mp3')
           playlistName = "My Songs";
         } else {
-          const parentDir = path.substring(0, lastSlash); // e.g., 'P@' or 'P@/Innovative Prosperity'
+          const parentDir = path.substring(0, lastSlash);
 
-          // Check if this directory contains any other directories.
           let isContainer = false;
           for (const otherDir of dirPaths) {
             if (otherDir !== parentDir && otherDir.startsWith(parentDir + '/')) {
@@ -1195,25 +346,19 @@ const App = () => {
           }
 
           if (isContainer) {
-            // This directory contains other directories, so its direct files are "loose".
-            // Group them into the default playlist.
             playlistName = "My Songs";
           } else {
-            // This is a "leaf" directory containing only songs. Treat it as a playlist.
-            // Use the directory's own name for the playlist.
             const nameParts = parentDir.split('/');
             playlistName = nameParts[nameParts.length - 1];
           }
         }
 
-        // Initialize metadata placeholders
         let coverUrl = null;
         let title = file.name.replace(/\.[^/.]+$/, "");
         let artist = "Unknown Artist";
-        let duration = 180; // Default duration in seconds
+        let duration = "3:00";
 
         try {
-          // Attempt to read actual metadata using the imported library function
           const blob = file.slice();
           const metadata = await parseBlob(blob);
 
@@ -1227,31 +372,27 @@ const App = () => {
               duration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
             }
 
-            // Attempt to extract embedded cover image
             const pictures = metadata.common.picture;
             if (pictures && pictures.length > 0) {
               const pic = pictures[0];
-              // Create a Blob URL for the cover image data
               coverUrl = URL.createObjectURL(
-                new Blob([pic.data], { type: pic.format })
+                new Blob([new Uint8Array(pic.data)], { type: pic.format })
               );
             }
           }
         } catch (err) {
           console.warn("Failed to read metadata for", file.name, err);
-          // If metadata fails completely, title/artist fall back to filename, coverUrl remains null
         }
 
-        // --- FALLBACK LOGIC ---
         if (!coverUrl) {
-          // If no cover was extracted or parsing failed, generate a reliable SVG cover
-          const hash = Array.from(title).reduce(
+          const titleStr = title;
+          const hash = Array.from(titleStr).reduce(
             (h, char) => h + char.charCodeAt(0),
             0
           );
           const colorInt = (hash * 1234567) % 0xffffff;
           const color = colorInt.toString(16).padStart(6, "0");
-          coverUrl = generateSvgCover(title, color);
+          coverUrl = generateSvgCover(titleStr, color);
         }
 
         const url = URL.createObjectURL(file);
@@ -1260,7 +401,7 @@ const App = () => {
         const songData = {
           title,
           artist,
-          album: playlistName, // Set album to playlist name if metadata didn't provide one
+          album: playlistName,
           cover: coverUrl,
           url: url,
           duration,
@@ -1273,7 +414,6 @@ const App = () => {
       })
     );
 
-    // Revoke old object URLs before setting new state
     Object.values(playlists)
       .flat()
       .forEach((song) => {
@@ -1282,19 +422,16 @@ const App = () => {
 
     setPlaylists((prev) => ({ ...prev, ...tempPlaylists }));
 
-    // Navigate to the first loaded playlist or Home
     if (Object.keys(tempPlaylists).length > 0) {
       const firstPlaylistName = Object.keys(tempPlaylists)[0];
       setCurrentPlaylistName(firstPlaylistName);
-      setCurrentSongIndex(0); // Reset index
-      // navigate(`/play/${encodeURIComponent(firstPlaylistName)}`);
+      setCurrentSongIndex(0);
       navigate("/");
     } else {
       navigate("/");
     }
   };
 
-  // 6. Audio Event Listeners (Connects browser audio events to React state)
   useEffect(() => {
     const audio = audioRef.current;
 
@@ -1306,8 +443,6 @@ const App = () => {
     const updateTime = () => setCurrentTime(audio.currentTime);
     const togglePlay = () => setIsPlaying(true);
     const togglePause = () => setIsPlaying(false);
-
-    // Song ends -> calls onNext(), which contains the playback mode logic
     const handleSongEnd = () => onNext();
 
     audio.addEventListener("loadeddata", setAudioData);
@@ -1316,7 +451,6 @@ const App = () => {
     audio.addEventListener("pause", togglePause);
     audio.addEventListener("ended", handleSongEnd);
 
-    // Cleanup function
     return () => {
       audio.removeEventListener("loadeddata", setAudioData);
       audio.removeEventListener("timeupdate", updateTime);
@@ -1326,9 +460,7 @@ const App = () => {
     };
   }, [onNext]);
 
-  // --- CLEANUP ---
   useEffect(() => {
-    // Revoke object URLs when the component unmounts
     return () => {
       audioRef.current.pause();
       Object.values(playlists)
@@ -1340,16 +472,38 @@ const App = () => {
   }, [playlists]);
 
   return (
-    <div
-      className="flex h-screen bg-black text-white font-inter"
-      // style={{
-      //   backgroundImage: `url('/background01.jpg')`,
-      //   backgroundSize: "cover",
-      //   backgroundPosition: "center",
-      // }}
-    >
-      <div className="flex flex-col flex-grow min-w-0 backdrop-blur-xl bg-black/70">
-        <Navbar onFolderSelect={handleFolderSelect} />
+    <div className="flex h-screen bg-background text-white overflow-hidden relative">
+      {/* Dynamic blurred background based on current song */}
+      {
+        isPlaying && currentPlayingSong?.cover ? (
+          <div className="fixed inset-0 z-0">
+            <div
+              className="absolute inset-0 bg-cover bg-center animate-fade-in"
+              style={{
+                backgroundImage: `url(${currentPlayingSong.cover})`,
+                filter: 'blur(10px) brightness(0.4)',
+                transform: "scale(1.2)",
+              }}
+            />
+            <div className="absolute inset-0 bg-background/40" />
+          </div>
+        ) : (
+          <div className="fixed inset-0 z-0">
+            <div
+              className="absolute inset-0 bg-cover bg-center animate-fade-in"
+              style={{
+                backgroundImage: `url(/background01.jpg)`,
+                filter: 'blur(10px) brightness(0.4)',
+                transform: "scale(1.2)",
+              }}
+            />
+            <div className="absolute inset-0 bg-background/40" />
+          </div>
+        )
+      }
+
+      <div className="flex flex-col lg:flex-row flex-grow min-w-0 relative z-10">
+        {/* <Navbar onFolderSelect={handleFolderSelect} /> */}
         <main className="flex-grow overflow-y-auto custom-scrollbar">
           <Routes>
             <Route
@@ -1385,8 +539,10 @@ const App = () => {
             <Route
               path="*"
               element={
-                <div className="p-8">
-                  <h1 className="text-3xl font-bold">404 Not Found</h1>
+                <div className="p-8 flex items-center justify-center min-h-screen">
+                  <div className="text-center p-8 md:p-16 rounded-3xl bg-card/20 backdrop-blur-3xl border border-white/10 shadow-2xl">
+                    <h1 className="text-2xl md:text-4xl font-bold text-white">404 Not Found</h1>
+                  </div>
                 </div>
               }
             />
@@ -1394,6 +550,7 @@ const App = () => {
         </main>
       </div>
 
+      <div className="hidden lg:block">
       <RightPlayerPanel
         currentSong={currentPlayingSong}
         isPlaying={isPlaying}
@@ -1410,6 +567,23 @@ const App = () => {
         toggleRepeat={toggleRepeat}
         currentPlaybackList={currentPlaybackList}
       />
+      </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--muted) / 0.5);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--muted-foreground) / 0.7);
+        }
+      `}</style>
     </div>
   );
 };
