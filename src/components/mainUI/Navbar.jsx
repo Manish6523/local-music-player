@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Music, Menu, Plus } from "lucide-react";
+import { Music, Menu, Plus, Disc2, Disc3, AudioLines } from "lucide-react";
 
 const Navbar = ({ onFolderSelect, onToggleRightPanel }) => {
   const navigate = useNavigate();
@@ -15,10 +15,10 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel }) => {
           className="flex items-center space-x-2 md:space-x-3 group"
         >
           <div className="p-1.5 md:p-2 rounded-xl md:rounded-2xl bg-gradient-primary">
-            <Music size={20} className="md:w-7 md:h-7 text-white" />
+            <AudioLines size={20} className="md:w-7 md:h-7 text-white animate-pulse" />
           </div>
-          <span className="text-xl md:text-2xl font-bold text-white hidden sm:inline group-hover:text-primary transition-colors">
-            Vibes
+          <span className="text-xl md:text-2xl font-bold text-white sm:inline group-hover:text-primary transition-colors">
+          Golden Wind 
           </span>
         </button>
       </div>
@@ -45,7 +45,7 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel }) => {
           className="lg:hidden p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
           aria-label="Toggle player panel"
         >
-          <Menu size={24} className="text-white" />
+          <Disc3 size={24} className="text-white animate-spin" />
         </button>
       </div>
     </nav>
