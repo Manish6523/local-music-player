@@ -12,8 +12,17 @@ import {
   Music,
   Clock,
   MoreHorizontal,
+  X,
 } from "lucide-react";
 import { MUSIC_NOTE_FALLBACK } from "./utils";
+/*
+  To make the RightPlayerPanel component itself vertically scrollable
+  (instead of only the queue having scroll), wrap the top-level content in a div:
+    className="h-full overflow-y-auto"
+  or similar at the top-level container of the component (not shown in import section).
+  IN THIS SELECTION: No code changes beyond imports are needed here,
+  but be sure to update container div in the main component render accordingly.
+*/
 
 const RightPlayerPanel = ({
   currentSong,
@@ -30,6 +39,9 @@ const RightPlayerPanel = ({
   repeatMode,
   toggleRepeat,
   currentPlaybackList,
+  playSong,
+  currentSongIndex,
+  onClose,
 }) => {
   const formatTime = (seconds) => {
     if (isNaN(seconds) || seconds === 0) return "0:00";
@@ -45,30 +57,55 @@ const RightPlayerPanel = ({
 
   const currentCover = currentSong?.cover || MUSIC_NOTE_FALLBACK;
 
-  const currentSongIndex = useMemo(
+  // Calculate the index in the playback list for queue display
+  const songIndexInList = useMemo(
     () =>
       currentPlaybackList.findIndex((song) => song.url === currentSong?.url),
     [currentPlaybackList, currentSong]
   );
 
   const upNext =
-    currentSongIndex >= 0
-      ? currentPlaybackList.slice(currentSongIndex + 1)
+    songIndexInList >= 0
+      ? currentPlaybackList.slice(songIndexInList + 1)
       : currentPlaybackList;
   const fallbackCover = MUSIC_NOTE_FALLBACK;
 
+  const handleQueueItemClick = (song, index) => {
+    if (playSong && currentPlaybackList) {
+      // Find the actual index in the current playback list
+      const actualIndex = currentPlaybackList.findIndex((s) => s.url === song.url);
+      if (actualIndex >= 0) {
+        playSong(currentPlaybackList, actualIndex);
+      }
+    }
+    // if (onClose) {
+    //   onClose();
+    // }
+  };
+
   return (
-    <div className="w-96 relative flex flex-shrink-0 flex-col h-full overflow-hidden">
+    <div className="w-full lg:w-96 h-full relative flex flex-shrink-0 flex-col bg-background lg:bg-transparent">
       {/* Enhanced Glass panel with gradient and stronger blur */}
-      <div className="absolute inset-0 bg-gradient-glass border-l border-white/10">
+      <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl border-l border-white/10">
         <div className="absolute inset-0 bg-card/20"></div>
       </div>
 
+      {/* Close button for mobile */}
+      <div className="lg:hidden fixed z-20 flex justify-end p-3 right-0">
+        <button
+          onClick={onClose}
+          className="p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
+          aria-label="Close panel"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
       {/* Content */}
-      <div className="relative z-10 p-4 md:p-6 flex flex-col space-y-4 md:space-y-6 min-h-full">
+      <div className="relative z-10 p-4 md:p-6 flex flex-col space-y-4 md:space-y-6 h-full ">
         {/* Player Section */}
         {currentSong ? (
-          <div className="flex flex-col text-white space-y-4 md:space-y-6">
+          <div className="flex flex-col text-white space-y-4 md:space-y-6 flex-shrink-0">
             {/* Cover with enhanced glass effect */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-primary opacity-30 rounded-2xl blur-xl group-hover:opacity-50 transition-opacity duration-300"></div>
@@ -148,7 +185,7 @@ const RightPlayerPanel = ({
                 {isPlaying ? (
                   <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
                 ) : (
-                  <Play size={24} className="md:w-7 md:h-7" fill="currentColor" className="ml-1" />
+                  <Play size={24} className="md:w-7 md:h-7" fill="currentColor" />
                 )}
               </button>
 
@@ -220,30 +257,35 @@ const RightPlayerPanel = ({
         )}
 
         {/* Queue Section with enhanced glass effect */}
-        <div className="border-t border-white/10 pt-4 md:pt-6 flex-grow flex flex-col min-h-0">
-          <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white">Up Next</h3>
-          <div className="space-y-2 overflow-y-auto custom-scrollbar flex-grow">
+        <div className="border-t border-white/10 pt-4 md:pt-6 flex flex-col min-h-0 flex-1 overflow-hidden">
+          <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white flex-shrink-0">Up Next</h3>
+          <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0">
             {upNext.length > 0 ? (
-              upNext.slice(0, 20).map((song, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-2 md:space-x-3 p-2 md:p-3 rounded-xl hover:bg-white/5 backdrop-blur-xl transition-all duration-200 cursor-pointer group border border-transparent hover:border-white/10 hover:shadow-lg"
-                >
-                  <img
-                    src={song.cover || fallbackCover}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-lg ring-1 ring-white/20 shadow-md"
-                    onError={(e) => (e.target.src = fallbackCover)}
-                    alt="cover"
-                  />
-                  <div className="truncate flex-grow min-w-0">
-                    <p className="text-xs md:text-sm text-white group-hover:text-primary transition-colors truncate">
-                      {song.title}
-                    </p>
-                    <p className="text-[10px] md:text-xs text-white/70 truncate">{song.artist}</p>
+              upNext.slice(0, 20).map((song, index) => {
+                // Calculate the actual index in the full playback list
+                const actualIndex = currentPlaybackList.findIndex((s) => s.url === song.url);
+                return (
+                  <div
+                    key={`${song.url}-${index}`}
+                    onClick={() => handleQueueItemClick(song, actualIndex)}
+                    className="flex items-center space-x-2 md:space-x-3 p-2 md:p-3 rounded-xl hover:bg-white/5 backdrop-blur-xl transition-all duration-200 cursor-pointer group border border-transparent hover:border-white/10 hover:shadow-lg"
+                  >
+                    <img
+                      src={song.cover || fallbackCover}
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-lg ring-1 ring-white/20 shadow-md flex-shrink-0"
+                      onError={(e) => (e.target.src = fallbackCover)}
+                      alt="cover"
+                    />
+                    <div className="truncate flex-grow min-w-0">
+                      <p className="text-xs md:text-sm text-white group-hover:text-primary transition-colors truncate">
+                        {song.title}
+                      </p>
+                      <p className="text-[10px] md:text-xs text-white/70 truncate">{song.artist}</p>
+                    </div>
+                    <span className="text-[10px] md:text-xs text-white/70 flex-shrink-0">{song.duration}</span>
                   </div>
-                  <span className="text-[10px] md:text-xs text-white/70">{song.duration}</span>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center p-6 md:p-8 rounded-xl bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-lg">
                 <p className="text-xs md:text-sm text-white/70">Queue is empty</p>

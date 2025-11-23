@@ -1,16 +1,14 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Music } from "lucide-react";
+import { Music, Menu, Plus } from "lucide-react";
 
-const Navbar = ({ onFolderSelect }) => {
+const Navbar = ({ onFolderSelect, onToggleRightPanel }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   return (
     <nav
-      className={`h-16 md:h-20 px-4 md:px-8 flex items-center justify-between fixed w-full top-0 z-30 transition-all duration-300
-        ${isHome ? "bg-transparent" : "bg-gradient-glass backdrop-blur-3xl border-b border-white/10 shadow-lg"}`}
-    >
+      className={`h-16 md:h-20 px-4 md:px-8 flex items-center justify-between fixed w-full top-0 z-30 transition-all duration-300`}   >
       <div className="flex items-center space-x-2 md:space-x-4">
         <button
           onClick={() => navigate("/")}
@@ -27,18 +25,28 @@ const Navbar = ({ onFolderSelect }) => {
 
       <div className="flex items-center space-x-2 md:space-x-4">
         <label className="relative group cursor-pointer">
-          <div className="px-4 py-2 md:px-6 md:py-3 bg-gradient-primary rounded-full font-semibold text-xs md:text-sm shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all duration-300 hover:scale-105 text-white ring-2 ring-white/20 backdrop-blur-xl">
-            + Load Music
+          <div className="lg:hidden p-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
+          aria-label="Toggle player panel">
+            <Plus size={24} />
           </div>
           <input
             type="file"
             webkitdirectory="true"
             directory="true"
             multiple
-            onChange={()=>onFolderSelect()}
+            onChange={onFolderSelect}
             className="hidden"
           />
         </label>
+        
+        {/* Hamburger menu for mobile */}
+        <button
+          onClick={onToggleRightPanel}
+          className="lg:hidden p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
+          aria-label="Toggle player panel"
+        >
+          <Menu size={24} className="text-white" />
+        </button>
       </div>
     </nav>
   );

@@ -33,6 +33,7 @@ const App = () => {
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState("off");
   const [shuffledSongMap, setShuffledSongMap] = useState({});
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   const audioRef = useRef(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
@@ -493,8 +494,8 @@ const App = () => {
             // Use lighter blur for song cover, heavier for default; but you could always use the same if you prefer!
             filter:
               bgImage === "/background01.jpg"
-                ? 'blur(10px) brightness(0.4)'
-                : 'blur(2px) brightness(0.4)',
+                ? 'blur(7px) brightness(0.4)'
+                : 'blur(7px) brightness(0.4)',
             transform: "scale(1.2)",
           }}
         />
@@ -502,7 +503,7 @@ const App = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row flex-grow min-w-0 relative z-10">
-        {/* <Navbar onFolderSelect={handleFolderSelect} /> */}
+        <Navbar onFolderSelect={handleFolderSelect} onToggleRightPanel={() => setShowRightPanel(!showRightPanel)} />
         <main className="flex-grow overflow-y-auto custom-scrollbar">
           <Routes>
             <Route
@@ -549,7 +550,13 @@ const App = () => {
         </main>
       </div>
 
-      <div className="hidden lg:block">
+      {/* Right Panel - Overlay on mobile, sidebar on desktop */}
+      {showRightPanel && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setShowRightPanel(false)}></div>
+      )}
+      <div className={`fixed lg:relative inset-y-0 right-0 lg:inset-auto z-50 lg:z-auto transition-transform duration-300 ${
+        showRightPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+      }`}>
         <RightPlayerPanel
           currentSong={currentPlayingSong}
           isPlaying={isPlaying}
@@ -565,6 +572,9 @@ const App = () => {
           repeatMode={repeatMode}
           toggleRepeat={toggleRepeat}
           currentPlaybackList={currentPlaybackList}
+          playSong={playSong}
+          currentSongIndex={currentSongIndex}
+          onClose={() => setShowRightPanel(false)}
         />
       </div>
 

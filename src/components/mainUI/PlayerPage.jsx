@@ -1,6 +1,6 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useMemo, useCallback } from "react";
-import { Play, Pause, Heart, ListMusic, Clock } from "lucide-react";
+import { Play, Pause, Heart, ListMusic, Clock, ArrowBigLeft } from "lucide-react";
 import { PLAYLIST_FALLBACK_LG } from "./utils";
 
 const PlayerPage = ({
@@ -104,9 +104,14 @@ const PlayerPage = ({
 
   if (!playlistName || songList.length === 0) {
     return (
-      <div className="min-h-full bg-gray-300 flex items-center justify-center p-4 md:p-8">
+      <div className="min-h-full flex items-center justify-center p-4 md:p-8">
         <div className="text-center p-8 md:p-16 rounded-2xl md:rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl">
           <h2 className="text-2xl md:text-3xl font-bold text-white">Playlist Not Found</h2>
+          <Link to={"/"}>
+            <div className="inline-flex items-center justify-center mt-8 mx-auto rounded-full bg-gradient-primary shadow-lg hover:scale-105 transition-all p-3 w-12 h-12">
+              <ArrowBigLeft size={24} className="text-white" />
+            </div>
+          </Link>
         </div>
       </div>
     );
@@ -118,16 +123,16 @@ const PlayerPage = ({
   return (
     <div className="min-h-full text-white relative flex flex-col pt-16 md:pt-20">
       {/* Blurred background */}
-      <div className="absolute top-0 left-0 right-0 h-64 md:h-96 overflow-hidden">
+      {/* <div className="absolute top-0 left-0 right-0 h-64 md:h-102 overflow-hidden">
         <div
-          className="w-full h-full bg-center bg-cover scale-110 blur-3xl opacity-30"
+          className="w-full h-full bg-center bg-cover scale-110 blur-md"
           style={{
             backgroundImage: `url(${mainCover})`,
           }}
         ></div>
-      </div>
+      </div> */}
 
-      <div className="relative z-10 flex-grow p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+      <div className="relative z-10 flex-grow p-2 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
         {/* Header with glass effect */}
         <section className="flex flex-col md:flex-row items-center md:items-end md:space-x-8 mb-8 md:mb-12">
           <div className="relative group mb-4 md:mb-6 lg:mb-0">
@@ -172,7 +177,7 @@ const PlayerPage = ({
             {isCurrentPlaylistPlaying ? (
               <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
             ) : (
-              <Play size={24} className="md:w-7 md:h-7" fill="currentColor" className="ml-0.5" />
+              <Play size={24} className="md:w-7 md:h-7" fill="currentColor"/>
             )}
           </button>
 
@@ -209,8 +214,8 @@ const PlayerPage = ({
                   className={`grid grid-cols-[30px_1fr_50px] md:grid-cols-[40px_1fr_150px_80px] items-center py-2 md:py-3 px-2 md:px-4 rounded-lg md:rounded-xl cursor-pointer transition-all duration-200 group
                     ${
                       isCurrent
-                        ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20"
-                        : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent hover:border-white/10 hover:shadow-lg"
+                        ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20 "
+                        : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/10 hover:shadow-lg"
                     }`}
                 >
                   <span

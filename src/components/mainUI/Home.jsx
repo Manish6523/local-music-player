@@ -27,7 +27,7 @@ const Home = ({
   };
 
   return (
-    <div className="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto text-white min-h-full relative custom-scrollbar pt-20 md:pt-28"
+    <div className="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto text-white min-h-full relative custom-scrollbar pt-20 md:pt-28 md:mt-12"
     >
       {playlistNames.length === 0 && individualSongs.length === 0 ? (
         <div className="text-center p-8 md:p-16 mt-12 rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl max-w-2xl mx-auto">
@@ -69,11 +69,11 @@ const Home = ({
                       key={name}
                       className={`relative rounded-2xl overflow-hidden shadow-xl cursor-pointer
                         transition-all duration-300 group hover:scale-105
-                        ${isActive ? "ring-2 ring-primary shadow-2xl shadow-primary/50" : "hover:shadow-2xl"}`}
+                        ${isActive ? "ring-2 ring-primary shadow-2xl shadow-primary/50" : "hover:shadow-2xl border border-white/10"}`}
                       onClick={() => handlePlaylistClick(name)}
                     >
                       {/* Enhanced Glass card */}
-                      <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-inner"></div>
+                      <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl shadow-inner"></div>
                       
                       <div className="relative p-2 md:p-4 space-y-2 md:space-y-3">
                         <div className="relative">
@@ -84,7 +84,7 @@ const Home = ({
                             onError={(e) => (e.target.src = fallbackCover)}
                           />
                           {isActive && (
-                            <div className="absolute inset-0 bg-primary/30 backdrop-blur-md rounded-lg md:rounded-xl flex items-center justify-center border border-white/10">
+                            <div className="absolute inset-0 bg-primary/30 backdrop-blur-xs rounded-lg md:rounded-xl flex items-center justify-center border border-white/10">
                               <Disc3
                                 size={24}
                                 className="md:w-8 md:h-8 text-primary animate-spin drop-shadow-lg"
