@@ -57,7 +57,7 @@ const Home = ({
               <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">
               Your Playlists
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-6">
                 {playlistNames.map((name) => {
                   const list = otherPlaylists[name];
                   const firstSong = list[0];
@@ -125,7 +125,7 @@ const Home = ({
                         ${
                           isCurrent
                             ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20"
-                            : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent hover:border-white/10 hover:shadow-lg"
+                            : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent border-white/10 hover:border-white/50 hover:shadow-lg"
                         }`}
                     >
                       <img

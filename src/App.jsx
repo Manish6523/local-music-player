@@ -471,36 +471,35 @@ const App = () => {
     };
   }, [playlists]);
 
+  // Decide what the background image should be:
+  // - If there's a current song and it has a cover, use that.
+  // - Otherwise, use "/background01.jpg".
+  // The blur and filter should always be the same, regardless of play/pause state.
+  // Only change cover when the *song* changes, not when play/pause changes.
+
+  const bgImage =
+    currentPlayingSong?.cover && currentPlayingSong.cover.trim()
+      ? currentPlayingSong.cover
+      : "/background01.jpg";
+
   return (
     <div className="flex h-screen bg-background text-white overflow-hidden relative">
-      {/* Dynamic blurred background based on current song */}
-      {
-        isPlaying && currentPlayingSong?.cover ? (
-          <div className="fixed inset-0 z-0">
-            <div
-              className="absolute inset-0 bg-cover bg-center animate-fade-in"
-              style={{
-                backgroundImage: `url(${currentPlayingSong.cover})`,
-                filter: 'blur(10px) brightness(0.4)',
-                transform: "scale(1.2)",
-              }}
-            />
-            <div className="absolute inset-0 bg-background/40" />
-          </div>
-        ) : (
-          <div className="fixed inset-0 z-0">
-            <div
-              className="absolute inset-0 bg-cover bg-center animate-fade-in"
-              style={{
-                backgroundImage: `url(/background01.jpg)`,
-                filter: 'blur(10px) brightness(0.4)',
-                transform: "scale(1.2)",
-              }}
-            />
-            <div className="absolute inset-0 bg-background/40" />
-          </div>
-        )
-      }
+      {/* Dynamic blurred background based on current song (changes only when the song or cover changes, not play state) */}
+      <div className="fixed inset-0 z-0">
+        <div
+          className="absolute inset-0 bg-cover bg-center animate-fade-in"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            // Use lighter blur for song cover, heavier for default; but you could always use the same if you prefer!
+            filter:
+              bgImage === "/background01.jpg"
+                ? 'blur(10px) brightness(0.4)'
+                : 'blur(2px) brightness(0.4)',
+            transform: "scale(1.2)",
+          }}
+        />
+        <div className="absolute inset-0 bg-background/40" />
+      </div>
 
       <div className="flex flex-col lg:flex-row flex-grow min-w-0 relative z-10">
         {/* <Navbar onFolderSelect={handleFolderSelect} /> */}
@@ -551,22 +550,22 @@ const App = () => {
       </div>
 
       <div className="hidden lg:block">
-      <RightPlayerPanel
-        currentSong={currentPlayingSong}
-        isPlaying={isPlaying}
-        duration={duration}
-        currentTime={currentTime}
-        onPlayPause={onPlayPause}
-        onPrev={onPrev}
-        onNext={onNext}
-        onSeek={onSeek}
-        audioRef={audioRef}
-        isShuffle={isShuffle}
-        toggleShuffle={toggleShuffle}
-        repeatMode={repeatMode}
-        toggleRepeat={toggleRepeat}
-        currentPlaybackList={currentPlaybackList}
-      />
+        <RightPlayerPanel
+          currentSong={currentPlayingSong}
+          isPlaying={isPlaying}
+          duration={duration}
+          currentTime={currentTime}
+          onPlayPause={onPlayPause}
+          onPrev={onPrev}
+          onNext={onNext}
+          onSeek={onSeek}
+          audioRef={audioRef}
+          isShuffle={isShuffle}
+          toggleShuffle={toggleShuffle}
+          repeatMode={repeatMode}
+          toggleRepeat={toggleRepeat}
+          currentPlaybackList={currentPlaybackList}
+        />
       </div>
 
       <style>{`
