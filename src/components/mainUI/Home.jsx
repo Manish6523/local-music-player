@@ -33,7 +33,7 @@ const Home = ({
   };
 
   return (
-    <div className="flex-grow  p-3 md:p-8 lg:p-12 lg:pt-0  text-white min-h-full relative custom-scrollbar"
+    <div className="flex-grow  p-3 md:p-8 lg:p-[59px] lg:pt-0  text-white min-h-full relative custom-scrollbar"
     >
       <Navbar
         isScrolled={isScrolled}

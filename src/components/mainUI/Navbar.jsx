@@ -69,7 +69,8 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled }) => {
           className="flex items-center space-x-2 md:space-x-3 group"
         >
           <div className=" rounded-xl md:rounded-2xl bg-gradient-primary">
-            <AudioLines size={30} className="md:w-7 md:h-7 text-white animate-pulse" />
+            {/* <AudioLines size={30} className="md:w-7 md:h-7 text-white animate-pulse" /> */}
+            <img src="/logo.svg" width={50} alt="logo" />
           </div>
           <span className="text-xl hidden md:text-2xl font-bold text-white sm:inline group-hover:text-primary transition-colors">
             Golden Wind

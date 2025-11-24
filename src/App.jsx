@@ -478,6 +478,57 @@ const App = () => {
     };
   }, [onNext]);
 
+  // key bindings
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Get the key pressed in lowercase for easy comparison
+      const key = e.key.toLowerCase();
+      
+      // Define all keys that should prevent default browser actions (like scrolling or reloading)
+      const isMediaKey = 
+        e.code === "Space" || 
+        (e.shiftKey && (e.key === ">" || e.key === "<")) || 
+        key === 'r' || // Repeat
+        key === 's';   // Shuffle
+
+      if (isMediaKey) {
+        e.preventDefault();
+      }
+      
+      // 1. Spacebar for Play/Pause
+      if (e.code === "Space" || e.key === " ") {
+        onPlayPause();
+      }
+
+      // 2. Shift + > (Next Track)
+      if (e.shiftKey && (e.key === ">" || e.key === ".")) {
+        onNext();
+      }
+
+      // 3. Shift + < (Previous Track)
+      if (e.shiftKey && (e.key === "<" || e.key === ",")) {
+        onPrev();
+      }
+
+      // 4. R Key for Repeat (R toggles between off, all, one)
+      if (key === 'r') {
+        toggleRepeat();
+      }
+      
+      // 5. S Key for Shuffle (S toggles shuffle on/off)
+      if (key === 's') {
+        toggleShuffle(); // <--- CALL THE SHUFFLE TOGGLE FUNCTION
+      }
+    };
+  
+    window.addEventListener("keydown", handleKeyPress);
+  
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [onPlayPause, onNext, onPrev, toggleRepeat, toggleShuffle]); // 💡 DEPENDENCY ADDED: toggleShuffle
+
+
   useEffect(() => {
     return () => {
       audioRef.current.pause();
@@ -490,23 +541,17 @@ const App = () => {
   }, [playlists]);
 
   //   ---- NAVBAR SCROLL DETECTION LOGIC ----
-  // "isScrolled" becomes true as soon as content scrolls down
-  // so Navbar can use this as prop/class to make its background transparent always when scrolled or at top
 
   useEffect(() => {
-    // Target the main content scroll area (the element with class .custom-scrollbar)
-    // Since it's inside the main, we get it after render
     const mainScrollEl = document.querySelector('main.custom-scrollbar');
     if (!mainScrollEl) return; // Might not be mounted yet
 
     const handleScroll = () => {
-      // At the top of scroll, isScrolled should be false (fully transparent), otherwise true (transparent)
       setIsScrolled(mainScrollEl.scrollTop > 0);
     };
 
     mainScrollEl.addEventListener('scroll', handleScroll);
 
-    // Initial scroll state
     setIsScrolled(mainScrollEl.scrollTop > 0);
 
     return () => {
