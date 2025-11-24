@@ -121,9 +121,18 @@ const RightPlayerPanel = ({
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
 
-            <div className="text-center space-y-2">
-              <h2 className="text-xl md:text-2xl font-bold truncate text-white">
+            <div className="text-center space-y-2 hidden md:block">
+              <h2 className="text-xl md:text-2xl font-bold text-white overflow-hidden whitespace-nowrap">
                 {currentSong.title}
+              </h2>
+              <p className="text-xs md:text-sm text-white/70 truncate">
+                {currentSong.artist}
+              </p>
+            </div>
+            
+            <div className="text-center space-y-2 md:hidden block">
+              <h2 className="text-xl md:text-2xl font-bold text-white overflow-hidden ">
+                {currentSong.title.length > 30 ? currentSong.title.slice(0,30)+" ..." : currentSong.title}
               </h2>
               <p className="text-xs md:text-sm text-white/70 truncate">
                 {currentSong.artist}
@@ -162,11 +171,10 @@ const RightPlayerPanel = ({
             <div className="flex items-center justify-center space-x-2 md:space-x-4">
               <button
                 onClick={toggleShuffle}
-                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${
-                  isShuffle
+                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${isShuffle
                     ? "bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/20"
                     : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
-                }`}
+                  }`}
               >
                 <Shuffle size={18} className="md:w-5 md:h-5" />
               </button>
@@ -198,11 +206,10 @@ const RightPlayerPanel = ({
 
               <button
                 onClick={toggleRepeat}
-                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${
-                  repeatMode !== "off"
+                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${repeatMode !== "off"
                     ? "bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/20"
                     : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
-                }`}
+                  }`}
               >
                 <Repeat size={18} className="md:w-5 md:h-5" />
               </button>

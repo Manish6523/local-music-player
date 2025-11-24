@@ -215,7 +215,7 @@ const PlayerPage = ({
                     ${
                       isCurrent
                         ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20 "
-                        : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/10 hover:shadow-lg"
+                        : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/50 hover:shadow-lg"
                     }`}
                 >
                   <span

@@ -27,7 +27,7 @@ const Home = ({
   };
 
   return (
-    <div className="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto text-white min-h-full relative custom-scrollbar pt-20 md:pt-28 md:mt-12"
+    <div className="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto  text-white min-h-full relative custom-scrollbar pt-20 md:pt-28 md:mt-12"
     >
       {playlistNames.length === 0 && individualSongs.length === 0 ? (
         <div className="text-center p-8 md:p-16 mt-12 rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl max-w-2xl mx-auto">
