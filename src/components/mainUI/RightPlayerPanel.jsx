@@ -281,7 +281,9 @@ const RightPlayerPanel = ({
                     />
                     <div className="truncate flex-grow min-w-0">
                       <p className="text-xs md:text-sm text-white group-hover:text-primary transition-colors truncate">
-                        {song.title}
+                        {song.title.length > 30 
+                          ? song.title.split(" ").slice(0,3).join(" ") 
+                          : song.title}
                       </p>
                       <p className="text-[10px] md:text-xs text-white/70 truncate">{song.artist}</p>
                     </div>

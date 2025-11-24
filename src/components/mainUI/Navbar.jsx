@@ -66,7 +66,7 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled }) => {
       <div className="flex items-center space-x-2 md:space-x-4">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center space-x-2 md:space-x-3 group"
+          className="flex cursor-pointer items-center space-x-2 md:space-x-3 group"
         >
           <div className=" rounded-xl md:rounded-2xl bg-gradient-primary">
             {/* <AudioLines size={30} className="md:w-7 md:h-7 text-white animate-pulse" /> */}
