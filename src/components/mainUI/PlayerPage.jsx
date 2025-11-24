@@ -103,6 +103,7 @@ const PlayerPage = ({
   );
 
   if (!playlistName || songList.length === 0) {
+    window.location.href = "/";
     return (
       <div className="min-h-full flex items-center justify-center p-4 md:p-8">
         <div className="text-center p-8 md:p-16 rounded-2xl md:rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl">
@@ -177,7 +178,7 @@ const PlayerPage = ({
             {isCurrentPlaylistPlaying ? (
               <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
             ) : (
-              <Play size={24} className="md:w-7 md:h-7" fill="currentColor"/>
+              <Play size={24} className="md:w-7 md:h-7" fill="currentColor" />
             )}
           </button>
 
@@ -212,16 +213,14 @@ const PlayerPage = ({
                   key={idx}
                   onClick={() => handleSongClick(song, idx)}
                   className={`grid grid-cols-[30px_1fr_50px] md:grid-cols-[40px_1fr_150px_80px] items-center py-2 md:py-3 px-2 md:px-4 rounded-lg md:rounded-xl cursor-pointer transition-all duration-200 group
-                    ${
-                      isCurrent
-                        ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20 "
-                        : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/50 hover:shadow-lg"
+                    ${isCurrent
+                      ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20 "
+                      : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/50 hover:shadow-lg"
                     }`}
                 >
                   <span
-                    className={`text-xs md:text-sm font-mono text-center ${
-                      isCurrent ? "text-primary" : "text-white/70"
-                    }`}
+                    className={`text-xs md:text-sm font-mono text-center ${isCurrent ? "text-primary" : "text-white/70"
+                      }`}
                   >
                     {isCurrent ? (
                       <Play
@@ -242,9 +241,8 @@ const PlayerPage = ({
                     />
                     <div className="min-w-0 flex-1">
                       <p
-                        className={`text-sm md:text-base font-medium truncate ${
-                          isCurrent ? "text-primary" : "text-white group-hover:text-primary"
-                        } transition-colors`}
+                        className={`text-sm md:text-base font-medium truncate ${isCurrent ? "text-primary" : "text-white group-hover:text-primary"
+                          } transition-colors`}
                       >
                         {song.title}
                       </p>
