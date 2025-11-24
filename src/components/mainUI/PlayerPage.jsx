@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useMemo, useCallback } from "react";
 import { Play, Pause, Heart, ListMusic, Clock, ArrowBigLeft } from "lucide-react";
 import { PLAYLIST_FALLBACK_LG } from "./utils";
+import Navbar from "./Navbar";
 
 const PlayerPage = ({
   playlists,
@@ -14,6 +15,12 @@ const PlayerPage = ({
   onPlayPause,
   isPlaying,
   currentSongIndex,
+
+  isScrolled,
+  onToggleRightPanel,
+  handleFolderSelect,
+  setShowRightPanel,
+  showRightPanel
 }) => {
   const { pname } = useParams();
 
@@ -122,7 +129,7 @@ const PlayerPage = ({
     currentPlaylistName === playlistName && isPlaying;
 
   return (
-    <div className="min-h-full text-white relative flex flex-col pt-16 md:pt-20">
+    <div className="min-h-full text-white relative flex flex-col pt-0 md:pt-0">
       {/* Blurred background */}
       {/* <div className="absolute top-0 left-0 right-0 h-64 md:h-102 overflow-hidden">
         <div
@@ -132,10 +139,16 @@ const PlayerPage = ({
           }}
         ></div>
       </div> */}
+      
 
-      <div className="relative z-10 flex-grow p-2 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+      <div className="relative z-10 flex-grow p-3 md:p-8 lg:p-12 lg:pt-0 max-w-7xl mx-auto w-full">
+      <Navbar
+        isScrolled={isScrolled}
+        onFolderSelect={handleFolderSelect}
+        onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+      />
         {/* Header with glass effect */}
-        <section className="flex flex-col md:flex-row items-center md:items-end md:space-x-8 mb-8 md:mb-12">
+        <section className="flex flex-col mt-8 md:flex-row items-center md:items-end md:space-x-8 mb-8 md:mb-12">
           <div className="relative group mb-4 md:mb-6 lg:mb-0">
             <div className="absolute -inset-2 bg-gradient-primary opacity-20 rounded-2xl md:rounded-3xl blur-2xl group-hover:opacity-40 transition-opacity duration-500"></div>
             <img

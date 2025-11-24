@@ -1,14 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { Library, Disc3 } from "lucide-react";
 import { PLAYLIST_FALLBACK_SM, MUSIC_NOTE_FALLBACK } from "./utils";
+import Navbar from "./Navbar";
 
 const Home = ({
   playlists,
   onFolderSelect,
   selectPlaylist,
   currentSong,
+  handleFolderSelect,
   currentPlaylistName,
   playSong,
+  isScrolled,
+  onToggleRightPanel,
+  setShowRightPanel,
+  showRightPanel
 }) => {
   const { "My Songs": individualSongs = [], ...otherPlaylists } = playlists;
   const playlistNames = Object.keys(otherPlaylists);
@@ -27,8 +33,13 @@ const Home = ({
   };
 
   return (
-    <div className="flex-grow p-4 md:p-8 lg:p-12 overflow-y-auto  text-white min-h-full relative custom-scrollbar pt-20 md:pt-28 md:mt-12"
+    <div className="flex-grow  p-3 md:p-8 lg:p-12 lg:pt-0  text-white min-h-full relative custom-scrollbar"
     >
+      <Navbar
+        isScrolled={isScrolled}
+        onFolderSelect={handleFolderSelect}
+        onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+      />
       {playlistNames.length === 0 && individualSongs.length === 0 ? (
         <div className="text-center p-8 md:p-16 mt-12 rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl max-w-2xl mx-auto">
           <div className="p-6 md:p-8 rounded-full bg-primary/20 backdrop-blur-xl inline-flex mb-4 md:mb-6 border border-white/10 shadow-xl shadow-primary/20">
@@ -53,11 +64,11 @@ const Home = ({
       ) : (
         <>
           {playlistNames.length > 0 && (
-            <section className="mb-12 md:mb-16">
+            <section className="mb-12 md:mb-16 mt-10">
               <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-white">
-              Your Playlists
+                Your Playlists
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
                 {playlistNames.map((name) => {
                   const list = otherPlaylists[name];
                   const firstSong = list[0];
@@ -74,7 +85,7 @@ const Home = ({
                     >
                       {/* Enhanced Glass card */}
                       <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl shadow-inner"></div>
-                      
+
                       <div className="relative p-2 md:p-4 space-y-2 md:space-y-3">
                         <div className="relative">
                           <img
@@ -122,10 +133,9 @@ const Home = ({
                       key={idx}
                       onClick={() => handleSongClick(song, idx)}
                       className={`grid grid-cols-[50px_1fr_60px] md:grid-cols-[60px_1fr_100px] items-center p-3 md:p-4 rounded-lg md:rounded-xl cursor-pointer transition-all duration-200 group
-                        ${
-                          isCurrent
-                            ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20"
-                            : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent border-white/10 hover:border-white/50 hover:shadow-lg"
+                        ${isCurrent
+                          ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20"
+                          : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent border-white/10 hover:border-white/50 hover:shadow-lg"
                         }`}
                     >
                       <img
@@ -136,9 +146,8 @@ const Home = ({
                       />
                       <div className="truncate ml-2 md:ml-4">
                         <p
-                          className={`text-sm md:text-base font-medium truncate ${
-                            isCurrent ? "text-primary" : "text-white group-hover:text-primary"
-                          } transition-colors`}
+                          className={`text-sm md:text-base font-medium truncate ${isCurrent ? "text-primary" : "text-white group-hover:text-primary"
+                            } transition-colors`}
                         >
                           {song.title}
                         </p>

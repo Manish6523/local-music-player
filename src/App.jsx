@@ -40,6 +40,9 @@ const App = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // For controlling Navbar background transparency
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const playlistNames = Object.keys(playlists);
   const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
   const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
@@ -486,12 +489,32 @@ const App = () => {
     };
   }, [playlists]);
 
-  // Decide what the background image should be:
-  // - If there's a current song and it has a cover, use that.
-  // - Otherwise, use "/background01.jpg".
-  // The blur and filter should always be the same, regardless of play/pause state.
-  // Only change cover when the *song* changes, not when play/pause changes.
+  //   ---- NAVBAR SCROLL DETECTION LOGIC ----
+  // "isScrolled" becomes true as soon as content scrolls down
+  // so Navbar can use this as prop/class to make its background transparent always when scrolled or at top
 
+  useEffect(() => {
+    // Target the main content scroll area (the element with class .custom-scrollbar)
+    // Since it's inside the main, we get it after render
+    const mainScrollEl = document.querySelector('main.custom-scrollbar');
+    if (!mainScrollEl) return; // Might not be mounted yet
+
+    const handleScroll = () => {
+      // At the top of scroll, isScrolled should be false (fully transparent), otherwise true (transparent)
+      setIsScrolled(mainScrollEl.scrollTop > 0);
+    };
+
+    mainScrollEl.addEventListener('scroll', handleScroll);
+
+    // Initial scroll state
+    setIsScrolled(mainScrollEl.scrollTop > 0);
+
+    return () => {
+      mainScrollEl.removeEventListener('scroll', handleScroll);
+    };
+  }, [location]);
+
+  // Decide what the background image should be:
   const bgImage =
     currentPlayingSong?.cover && currentPlayingSong.cover.trim()
       ? currentPlayingSong.cover
@@ -505,7 +528,6 @@ const App = () => {
           className="absolute inset-0 bg-cover bg-center animate-fade-in"
           style={{
             backgroundImage: `url(${bgImage})`,
-            // Use lighter blur for song cover, heavier for default; but you could always use the same if you prefer!
             filter:
               bgImage === "/background01.jpg"
                 ? 'blur(7px) brightness(0.4)'
@@ -517,7 +539,12 @@ const App = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row flex-grow min-w-0 relative z-10">
-        <Navbar onFolderSelect={handleFolderSelect} onToggleRightPanel={() => setShowRightPanel(!showRightPanel)} />
+
+        {/* <Navbar
+          isScrolled={isScrolled}
+          onFolderSelect={handleFolderSelect}
+          onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+        /> */}
         <main className="flex-grow overflow-y-auto custom-scrollbar">
           <Routes>
             <Route
@@ -530,6 +557,11 @@ const App = () => {
                   currentSong={currentPlayingSong}
                   currentPlaylistName={currentPlaylistName}
                   playSong={playSong}
+                  isScrolled={isScrolled}
+                  onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+                  handleFolderSelect={handleFolderSelect}
+                  setShowRightPanel={setShowRightPanel}
+                  showRightPanel={showRightPanel}
                 />
               }
             />
@@ -547,6 +579,11 @@ const App = () => {
                   onPlayPause={onPlayPause}
                   isPlaying={isPlaying}
                   currentSongIndex={currentSongIndex}
+                  isScrolled={isScrolled}
+                  onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+                  handleFolderSelect={handleFolderSelect}
+                  setShowRightPanel={setShowRightPanel}
+                  showRightPanel={showRightPanel}
                 />
               }
             />
@@ -568,9 +605,8 @@ const App = () => {
       {showRightPanel && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setShowRightPanel(false)}></div>
       )}
-      <div className={`fixed lg:relative inset-y-0 right-0 lg:inset-auto z-50 lg:z-auto transition-transform duration-300 ${
-        showRightPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-      }`}>
+      <div className={`fixed lg:relative inset-y-0 right-0 lg:inset-auto z-50 lg:z-auto transition-transform duration-300 ${showRightPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+        }`}>
         <RightPlayerPanel
           currentSong={currentPlayingSong}
           isPlaying={isPlaying}

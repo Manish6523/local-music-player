@@ -229,42 +229,21 @@ const RightPlayerPanel = ({
               </div>
               <div className="flex items-center space-x-2">
                 <Volume2 size={16} className="md:w-[18px] md:h-[18px] text-white/70" />
-                <div className="relative w-20 h-4 flex items-center">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    defaultValue="1"
-                    onChange={(e) => {
-                      const vol = parseFloat(e.target.value);
-                      audioRef.current.volume = vol;
-                    }}
-                    className="w-full h-1 appearance-none rounded-full bg-white/10 cursor-pointer border border-white/10
-                      [&::-webkit-slider-thumb]:appearance-none
-                      [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary
-                      [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary/30
-                      outline-none"
-                    style={{
-                      WebkitAppearance: "none",
-                      background: "transparent"
-                    }}
-                  />
-                  {/* Custom Volume Knob/Ball */}
-                  {/* This element visually overlays the range thumb: */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `calc(${(audioRef.current?.volume ?? 1) * 100}% - 8px)`,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      pointerEvents: "none"
-                    }}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-primary shadow-lg shadow-primary/30 border-2 border-white/30 transition-all duration-200"></div>
-                  </div>
-                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  defaultValue="1"
+                  onChange={(e) => {
+                    const vol = parseFloat(e.target.value);
+                    audioRef.current.volume = vol;
+                  }}
+                  className="w-20 h-1 appearance-none rounded-full bg-white/10 cursor-pointer border border-white/10
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary 
+                    [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary/30"
+                />
               </div>
             </div>
           </div>
