@@ -97,7 +97,7 @@ const RightPlayerPanel = ({
           className="p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
           aria-label="Close panel"
         >
-          <X size={24} />
+          <X size={24} className="cursor-pointer" />
         </button>
       </div>
 
@@ -172,14 +172,14 @@ const RightPlayerPanel = ({
                     : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
                   }`}
               >
-                <Shuffle size={18} className="md:w-5 md:h-5" />
+                <Shuffle size={18} className="md:w-5 md:h-5 cursor-pointer" />
               </button>
 
               <button
                 onClick={onPrev}
                 className="p-2 md:p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 hover:scale-105 hover:border-white/20 transition-all duration-300 shadow-lg"
               >
-                <SkipBack size={20} className="md:w-[22px] md:h-[22px]" fill="currentColor" />
+                <SkipBack size={20} className="md:w-[22px] md:h-[22px] cursor-pointer" fill="currentColor" />
               </button>
 
               <button
@@ -187,9 +187,9 @@ const RightPlayerPanel = ({
                 className="w-12 h-12 md:w-16 md:h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/50 hover:shadow-3xl hover:shadow-primary/60 hover:scale-110 transition-all duration-300 ring-2 ring-white/20 backdrop-blur-xl"
               >
                 {isPlaying ? (
-                  <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
+                  <Pause size={24} className="md:w-7 md:h-7 cursor-pointer" fill="currentColor" />
                 ) : (
-                  <Play size={24} className="md:w-7 md:h-7" fill="currentColor" />
+                  <Play size={24} className="md:w-7 md:h-7 cursor-pointer" fill="currentColor" />
                 )}
               </button>
 
@@ -197,7 +197,7 @@ const RightPlayerPanel = ({
                 onClick={onNext}
                 className="p-2 md:p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 hover:scale-105 hover:border-white/20 transition-all duration-300 shadow-lg"
               >
-                <SkipForward size={20} className="md:w-[22px] md:h-[22px]" fill="currentColor" />
+                <SkipForward size={20} className="md:w-[22px] md:h-[22px] cursor-pointer" fill="currentColor" />
               </button>
 
               <button
@@ -207,7 +207,7 @@ const RightPlayerPanel = ({
                     : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
                   }`}
               >
-                <Repeat size={18} className="md:w-5 md:h-5" />
+                <Repeat size={18} className="md:w-5 md:h-5 cursor-pointer" />
               </button>
             </div>
 
@@ -215,20 +215,20 @@ const RightPlayerPanel = ({
             <div className="flex items-center justify-between p-3 md:p-4 rounded-2xl bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-xl">
               <div className="flex items-center gap-2 md:gap-3">
                 <button className="text-white/70 hover:text-white transition-colors">
-                  <Heart size={16} className="md:w-[18px] md:h-[18px]" />
+                  <Heart size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
                 </button>
                 <button className="text-white/70 hover:text-white transition-colors">
-                  <ListMusic size={16} className="md:w-[18px] md:h-[18px]" />
+                  <ListMusic size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
                 </button>
                 <button className="text-white/70 hover:text-white transition-colors">
-                  <Clock size={16} className="md:w-[18px] md:h-[18px]" />
+                  <Clock size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
                 </button>
                 <button className="text-white/70 hover:text-white transition-colors">
-                  <MoreHorizontal size={16} className="md:w-[18px] md:h-[18px]" />
+                  <MoreHorizontal size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
                 </button>
               </div>
               <div className="flex items-center space-x-2">
-                <Volume2 size={16} className="md:w-[18px] md:h-[18px] text-white/70" />
+                <Volume2 size={16} className="md:w-[18px] md:h-[18px] text-white/70 cursor-pointer" />
                 <input
                   type="range"
                   min="0"
@@ -250,7 +250,7 @@ const RightPlayerPanel = ({
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-white/70 text-center space-y-4">
             <div className="p-4 md:p-6 rounded-full bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-2xl">
-              <Music size={40} className="md:w-12 md:h-12" />
+              <Music size={40} className="md:w-12 md:h-12 cursor-pointer" />
             </div>
             <div>
               <p className="text-base md:text-lg font-semibold text-white">No song selected</p>
