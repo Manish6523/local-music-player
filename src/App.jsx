@@ -44,6 +44,20 @@ const App = () => {
   const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
   const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
 
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave? Your playback will be stopped.";
+      return "Are you sure you want to leave? Your playback will be stopped.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   const getPlaybackList = useCallback(() => {
     if (
       isShuffle &&
