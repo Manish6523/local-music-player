@@ -17,6 +17,7 @@ import Navbar from "./components/mainUI/Navbar";
 import Home from "./components/mainUI/Home";
 import PlayerPage from "./components/mainUI/PlayerPage";
 import { generateSvgCover } from "./components/mainUI/utils";
+import { Disc3 } from "lucide-react";
 
 window.Buffer = Buffer;
 
@@ -34,6 +35,7 @@ const App = () => {
   const [repeatMode, setRepeatMode] = useState("off");
   const [shuffledSongMap, setShuffledSongMap] = useState({});
   const [showRightPanel, setShowRightPanel] = useState(false);
+  const [isLoadingSongs, setIsLoadingSongs] = useState(false);
 
   const audioRef = useRef(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
@@ -328,6 +330,7 @@ const App = () => {
   }, []);
 
   const handleFolderSelect = async (e) => {
+    setIsLoadingSongs(true);
     const files = Array.from(e.target.files).filter((file) =>
       file.type.includes("audio")
     );
@@ -448,6 +451,8 @@ const App = () => {
     } else {
       navigate("/");
     }
+    
+    setIsLoadingSongs(false);
   };
 
   useEffect(() => {
@@ -567,6 +572,20 @@ const App = () => {
 
   return (
     <div className="flex h-screen bg-background text-white overflow-hidden relative">
+      {/* Loading overlay */}
+      {isLoadingSongs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="text-center p-8 md:p-12 rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl max-w-md mx-auto">
+            <div className="p-6 md:p-8 rounded-full bg-primary/20 backdrop-blur-xl inline-flex mb-4 md:mb-6 border border-white/10 shadow-xl shadow-primary/20">
+              <Disc3 size={48} className="md:w-16 md:h-16 text-primary animate-spin drop-shadow-lg" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4 text-white">Loading Songs</h2>
+            <p className="text-white/70 mb-6 md:mb-8 text-base md:text-lg">
+              Please wait while we process your music files...
+            </p>
+          </div>
+        </div>
+      )}
       {/* Dynamic blurred background based on current song (changes only when the song or cover changes, not play state) */}
       <div className="fixed inset-0 z-0">
         <div
