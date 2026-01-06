@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
 } from "react";
 import { Buffer } from "buffer";
 import {
@@ -48,6 +49,11 @@ const App = () => {
   const playlistNames = Object.keys(playlists);
   const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
   const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
+
+  // Collect all songs from all playlists for search
+  const allSongs = useMemo(() => {
+    return Object.values(playlists).flat();
+  }, [playlists]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -486,20 +492,30 @@ const App = () => {
   // key bindings
   useEffect(() => {
     const handleKeyPress = (e) => {
+      // FIX: Ignore when typing in <input>, <textarea> or contenteditable
+      const active = document.activeElement;
+      const tag = active && active.tagName && active.tagName.toLowerCase();
+      const isEditable = active && (
+        tag === "input" ||
+        tag === "textarea" ||
+        active.isContentEditable
+      );
+      if (isEditable) return;
+
       // Get the key pressed in lowercase for easy comparison
       const key = e.key.toLowerCase();
-      
+
       // Define all keys that should prevent default browser actions (like scrolling or reloading)
-      const isMediaKey = 
-        e.code === "Space" || 
-        (e.shiftKey && (e.key === ">" || e.key === "<")) || 
-        key === 'r' || // Repeat
-        key === 's';   // Shuffle
+      const isMediaKey =
+        e.code === "Space" ||
+        (e.shiftKey && (e.key === ">" || e.key === "<")) ||
+        key === "r" || // Repeat
+        key === "s";   // Shuffle
 
       if (isMediaKey) {
         e.preventDefault();
       }
-      
+
       // 1. Spacebar for Play/Pause
       if (e.code === "Space" || e.key === " ") {
         onPlayPause();
@@ -516,22 +532,22 @@ const App = () => {
       }
 
       // 4. R Key for Repeat (R toggles between off, all, one)
-      if (key === 'r') {
+      if (key === "r") {
         toggleRepeat();
       }
-      
+
       // 5. S Key for Shuffle (S toggles shuffle on/off)
-      if (key === 's') {
+      if (key === "s") {
         toggleShuffle(); // <--- CALL THE SHUFFLE TOGGLE FUNCTION
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyPress);
-  
+
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [onPlayPause, onNext, onPrev, toggleRepeat, toggleShuffle]); // 💡 DEPENDENCY ADDED: toggleShuffle
+  }, [onPlayPause, onNext, onPrev, toggleRepeat, toggleShuffle]);
 
 
   useEffect(() => {
@@ -626,6 +642,7 @@ const App = () => {
                   handleFolderSelect={handleFolderSelect}
                   setShowRightPanel={setShowRightPanel}
                   showRightPanel={showRightPanel}
+                  allSongs={allSongs}
                 />
               }
             />
@@ -648,6 +665,7 @@ const App = () => {
                   handleFolderSelect={handleFolderSelect}
                   setShowRightPanel={setShowRightPanel}
                   showRightPanel={showRightPanel}
+                  allSongs={allSongs}
                 />
               }
             />

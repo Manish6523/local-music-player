@@ -14,7 +14,8 @@ const Home = ({
   isScrolled,
   onToggleRightPanel,
   setShowRightPanel,
-  showRightPanel
+  showRightPanel,
+  allSongs
 }) => {
   const { "My Songs": individualSongs = [], ...otherPlaylists } = playlists;
   const playlistNames = Object.keys(otherPlaylists);
@@ -39,6 +40,10 @@ const Home = ({
         isScrolled={isScrolled}
         onFolderSelect={handleFolderSelect}
         onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+        allSongs={allSongs}
+        playSong={playSong}
+        selectPlaylist={selectPlaylist}
+        playlists={playlists}
       />
       {playlistNames.length === 0 && individualSongs.length === 0 ? (
         <div className="text-center p-8 md:p-16 mt-12 rounded-3xl bg-gradient-glass backdrop-blur-3xl border border-white/10 shadow-2xl max-w-2xl mx-auto">

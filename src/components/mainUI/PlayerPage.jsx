@@ -15,12 +15,12 @@ const PlayerPage = ({
   onPlayPause,
   isPlaying,
   currentSongIndex,
-
   isScrolled,
   onToggleRightPanel,
   handleFolderSelect,
   setShowRightPanel,
-  showRightPanel
+  showRightPanel,
+  allSongs
 }) => {
   const { pname } = useParams();
 
@@ -146,6 +146,10 @@ const PlayerPage = ({
         isScrolled={isScrolled}
         onFolderSelect={handleFolderSelect}
         onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
+        allSongs={allSongs}
+        playSong={playSong}
+        selectPlaylist={selectPlaylist}
+        playlists={playlists}
       />
         {/* Header with glass effect */}
         <section className="flex flex-col mt-8 md:flex-row items-center md:items-end md:space-x-8 mb-8 md:mb-12">
