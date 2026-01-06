@@ -34,7 +34,7 @@ const Home = ({
   };
 
   return (
-    <div className="flex-grow  p-3 md:p-8 lg:p-[59px] lg:pt-0  text-white min-h-full relative custom-scrollbar"
+    <div className="grow  p-3 md:p-8 lg:p-[59px] lg:pt-0  text-white min-h-full relative custom-scrollbar"
     >
       <Navbar
         isScrolled={isScrolled}
@@ -140,7 +140,7 @@ const Home = ({
                       className={`grid grid-cols-[50px_1fr_60px] md:grid-cols-[60px_1fr_100px] items-center p-3 md:p-4 rounded-lg md:rounded-xl cursor-pointer transition-all duration-200 group
                         ${isCurrent
                           ? "bg-primary/20 backdrop-blur-xl border border-primary/30 shadow-lg shadow-primary/20"
-                          : "hover:bg-gradient-glass backdrop-blur-xl border border-transparent border-white/10 hover:border-white/50 hover:shadow-lg"
+                          : "hover:bg-gradient-glass backdrop-blur-xl border border-white/10 hover:border-white/50 hover:shadow-lg"
                         }`}
                     >
                       <img

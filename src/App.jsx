@@ -618,14 +618,14 @@ const App = () => {
         <div className="absolute inset-0 bg-background/40" />
       </div>
 
-      <div className="flex flex-col lg:flex-row flex-grow min-w-0 relative z-10">
+      <div className="flex flex-col lg:flex-row grow min-w-0 relative z-10">
 
         {/* <Navbar
           isScrolled={isScrolled}
           onFolderSelect={handleFolderSelect}
           onToggleRightPanel={() => setShowRightPanel(!showRightPanel)}
         /> */}
-        <main className="flex-grow overflow-y-auto custom-scrollbar">
+        <main className="grow overflow-y-auto custom-scrollbar">
           <Routes>
             <Route
               path="/"

@@ -84,7 +84,7 @@ const RightPlayerPanel = ({
   };
 
   return (
-    <div className="w-full lg:w-96 h-full relative flex flex-shrink-0 flex-col bg-background lg:bg-transparent">
+    <div className="w-full lg:w-96 h-full relative flex shrink-0 flex-col bg-background lg:bg-transparent">
       {/* Enhanced Glass panel with gradient and stronger blur */}
       <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl border-l border-white/10">
         <div className="absolute inset-0 bg-card/20"></div>
@@ -105,7 +105,7 @@ const RightPlayerPanel = ({
       <div className="relative z-10 p-4 md:p-6 flex flex-col space-y-4 md:space-y-6 h-full ">
         {/* Player Section */}
         {currentSong ? (
-          <div className="flex flex-col text-white space-y-4 md:space-y-6 flex-shrink-0">
+          <div className="flex flex-col text-white space-y-4 md:space-y-6 shrink-0">
             {/* Cover with enhanced glass effect */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-primary opacity-30 rounded-2xl blur-xl group-hover:opacity-50 transition-opacity duration-300"></div>
@@ -118,12 +118,12 @@ const RightPlayerPanel = ({
                   e.target.src = fallbackCover;
                 }}
               />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 rounded-2xl bg-linear-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
 
             <div className="text-center space-y-2">
               <h2
-                className="text-xl md:text-2xl font-bold text-white break-words max-w-full"
+                className="text-xl md:text-2xl font-bold text-white wrap-break-words max-w-full"
                 style={{ maxWidth: "100%", width: "100%", display: "block" }}
                 title={currentSong.title}
               >
@@ -261,7 +261,7 @@ const RightPlayerPanel = ({
 
         {/* Queue Section with enhanced glass effect */}
         <div className="border-t border-white/10 pt-4 md:pt-6 flex flex-col min-h-0 flex-1 overflow-hidden">
-          <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white flex-shrink-0">Up Next</h3>
+          <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white shrink-0">Up Next</h3>
           <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0">
             {upNext.length > 0 ? (
               upNext.slice(0, 20).map((song, index) => {
@@ -275,11 +275,11 @@ const RightPlayerPanel = ({
                   >
                     <img
                       src={song.cover || fallbackCover}
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-lg ring-1 ring-white/20 shadow-md flex-shrink-0"
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-lg ring-1 ring-white/20 shadow-md shrink-0"
                       onError={(e) => (e.target.src = fallbackCover)}
                       alt="cover"
                     />
-                    <div className="truncate flex-grow min-w-0">
+                    <div className="truncate grow min-w-0">
                       <p className="text-xs md:text-sm text-white group-hover:text-primary transition-colors truncate">
                         {song.title.length > 30 
                           ? song.title.split(" ").slice(0,3).join(" ") 
@@ -287,7 +287,7 @@ const RightPlayerPanel = ({
                       </p>
                       <p className="text-[10px] md:text-xs text-white/70 truncate">{song.artist}</p>
                     </div>
-                    <span className="text-[10px] md:text-xs text-white/70 flex-shrink-0">{song.duration}</span>
+                    <span className="text-[10px] md:text-xs text-white/70 shrink-0">{song.duration}</span>
                   </div>
                 );
               })

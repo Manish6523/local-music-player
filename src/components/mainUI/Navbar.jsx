@@ -83,7 +83,7 @@ function SearchBar({ allSongs, playSong, selectPlaylist, playlists, navigate, lo
         </div>
         {/* Dropdown */}
         {focus && (results.length > 0 || (debounced.trim() && results.length === 0)) && (
-          <div className="absolute left-0 right-0 mt-3 top-[120%] z-40 bg-gradient-glass backdrop-blur-xl rounded-xl border border-white/10 shadow-xl max-h-[16rem] overflow-y-auto custom-scrollbar p-1.5">
+          <div className="absolute left-0 right-0 mt-3 top-[120%] z-40 bg-gradient-glass backdrop-blur-xl rounded-xl border border-white/10 shadow-xl max-h-64 overflow-y-auto custom-scrollbar p-1.5">
             {results.length > 0 ? (
               results.map((song, idx) => (
                 <div
@@ -157,7 +157,7 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled, allSongs, play
       style={{ minHeight: "52px" }}
     >
       {/* Left: Logo */}
-      <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+      <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
         <button
           onClick={() => navigate("/")}
           className="flex items-center space-x-2 md:space-x-3 group focus:outline-none"

@@ -141,7 +141,7 @@ const PlayerPage = ({
       </div> */}
       
 
-      <div className="relative z-10 flex-grow p-3 md:p-8 lg:p-12 lg:pt-0 max-w-7xl mx-auto w-full">
+      <div className="relative z-10 grow p-3 md:p-8 lg:p-12 lg:pt-0 max-w-7xl mx-auto w-full">
       <Navbar
         isScrolled={isScrolled}
         onFolderSelect={handleFolderSelect}
@@ -164,7 +164,7 @@ const PlayerPage = ({
                 e.target.src = fallbackCover;
               }}
             />
-            <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-linear-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
 
           <div className="text-center md:text-left space-y-3 md:space-y-4">
