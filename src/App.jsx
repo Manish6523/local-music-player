@@ -75,8 +75,6 @@ const App = () => {
 
     const fetchGlobalLyrics = async () => {
       setIsLyricsFetching(true);
-      // We don't clear immediately to keep the old ones during "Searching..." 
-      // unless you prefer a clean slate.
       try {
         const query = encodeURIComponent(
           `${currentPlayingSong.title} ${currentPlayingSong.artist}`
@@ -104,7 +102,7 @@ const App = () => {
     };
 
     fetchGlobalLyrics();
-  }, [currentPlayingSong]); // Runs every time the song changes
+  }, [currentPlayingSong]);
 
   // Collect all songs from all playlists for search
   const allSongs = useMemo(() => {
@@ -336,7 +334,7 @@ const App = () => {
     shuffledSongMap,
     createShuffledList,
     playSong,
-    navigate,
+    // <-- removed navigate
   ]);
 
   const onPrev = useCallback(() => {
@@ -381,7 +379,7 @@ const App = () => {
     shuffledSongMap,
     getPlaybackList,
     playSong,
-    navigate,
+    // <-- removed navigate
   ]);
 
   const onSeek = useCallback((time) => {
@@ -509,21 +507,8 @@ const App = () => {
       const firstPlaylistName = Object.keys(tempPlaylists)[0];
       setCurrentPlaylistName(firstPlaylistName);
       setCurrentSongIndex(0);
-
-      // Custom logic: go to /preview if fullscreen, otherwise home
-      if (isPageFullScreen()) {
-        navigate("/preview");
-      } else {
-        navigate("/");
-      }
-    } else {
-      if (isPageFullScreen()) {
-        navigate("/preview");
-      } else {
-        navigate("/");
-      }
+      // No automatic navigation on fullscreen
     }
-    
     setIsLoadingSongs(false);
   };
 
@@ -604,7 +589,7 @@ const App = () => {
 
       // 5. S Key for Shuffle (S toggles shuffle on/off)
       if (key === "s") {
-        toggleShuffle(); // <--- CALL THE SHUFFLE TOGGLE FUNCTION
+        toggleShuffle();
       }
     };
 
@@ -614,7 +599,6 @@ const App = () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
   }, [onPlayPause, onNext, onPrev, toggleRepeat, toggleShuffle]);
-
 
   useEffect(() => {
     return () => {
@@ -652,40 +636,7 @@ const App = () => {
       ? currentPlayingSong.cover
       : "/background01.jpg";
 
-  // Custom redirect logic: force /preview in fullscreen, / otherwise.
-  // But only redirect when the path does not match the fullscreen state.
-  // This effect will keep things in sync if user presses F11 or exits full screen.
-
-  useEffect(() => {
-    // Only redirect if not already on the right page:
-    const isFull = isPageFullScreen();
-    // For precision: Only run if path doesn't match full screen status
-    if (isFull && location.pathname !== "/preview") {
-      navigate("/preview", { replace: true });
-    } else if (!isFull && location.pathname === "/preview") {
-      navigate("/", { replace: true });
-    }
-    // Watch full screen changes and location
-  }, [location, navigate]);
-
-  // Listen for fullscreen change events and force rerender (to trigger redirect logic above)
-  useEffect(() => {
-    const recheck = () => {
-      // Use location.state so rerender triggers useEffect above
-      navigate(location.pathname, { replace: true, state: { fullScreenSync: Math.random() } });
-    };
-    document.addEventListener("fullscreenchange", recheck);
-    document.addEventListener("webkitfullscreenchange", recheck);
-    document.addEventListener("mozfullscreenchange", recheck);
-    document.addEventListener("MSFullscreenChange", recheck);
-    return () => {
-      document.removeEventListener("fullscreenchange", recheck);
-      document.removeEventListener("webkitfullscreenchange", recheck);
-      document.removeEventListener("mozfullscreenchange", recheck);
-      document.removeEventListener("MSFullscreenChange", recheck);
-    };
-    // Must depend on navigate and location.pathname
-  }, [navigate, location.pathname]);
+  // REMOVED: Fullscreen-based navigation and logic
 
   return (
     <div className="flex h-screen bg-background text-white overflow-hidden relative">
@@ -712,7 +663,7 @@ const App = () => {
             filter:
               bgImage === "/background01.jpg"
                 ? 'blur(7px) brightness(0.4)'
-                : 'blur(7px) brightness(0.4)',
+                : 'blur(12px) brightness(0.4)',
             transform: "scale(1.2)",
           }}
         />
@@ -823,22 +774,6 @@ const App = () => {
           onClose={() => setShowRightPanel(false)}
         />
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: hsl(var(--muted) / 0.5);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: hsl(var(--muted-foreground) / 0.7);
-        }
-      `}</style>
     </div>
   );
 };

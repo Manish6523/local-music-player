@@ -1,22 +1,19 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import { ChevronLeft, Activity, Terminal, Zap } from "lucide-react";
+import React, { useEffect, useRef, useMemo } from "react";
+import { ChevronLeft, Activity, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetching }) => {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
 
-  // 1. Fullscreen Guard
+  // 1. Fullscreen mode: only request fullscreen, do not navigate away when exiting
   useEffect(() => {
-    const handleFS = () => { if (!document.fullscreenElement) navigate("/"); };
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
-    document.addEventListener("fullscreenchange", handleFS);
-    return () => document.removeEventListener("fullscreenchange", handleFS);
-  }, [navigate]);
+    // No logic to listen for fullscreenchange anymore.
+  }, []);
 
- 
   const currentIndex = useMemo(() => {
     return lyrics.findLastIndex(l => currentTime >= l.time);
   }, [lyrics, currentTime]);
@@ -44,7 +41,7 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
       const w = canvasRef.current.width = window.innerWidth;
       const h = canvasRef.current.height = window.innerHeight;
       analyzer.getByteFrequencyData(dataArray);
-      
+
       ctx.clearRect(0, 0, w, h);
 
       const rootStyle = getComputedStyle(document.documentElement);
@@ -53,17 +50,17 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
 
       // Draw symmetrical brutalist bars in the background
       const barWidth = w / dataArray.length;
-      
+
       for (let i = 0; i < dataArray.length; i++) {
         const barHeight = (dataArray[i] / 255) * (h / 2);
-        
+
         ctx.fillStyle = primaryColor;
         // Top half bars
         ctx.fillRect(i * barWidth, 0, barWidth - 2, barHeight);
         // Bottom half bars
         ctx.fillRect(i * barWidth, h - barHeight, barWidth - 2, barHeight);
       }
-      
+
       raf = requestAnimationFrame(render);
     };
 
@@ -75,20 +72,25 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
 
   return (
     <div className="fixed inset-0 z-[100] bg-background text-white flex flex-col overflow-hidden font-mono">
-      {/* Portfolo Style Blurred Background */}
+      {/* Portfolio Style Blurred Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-20 blur-[120px] scale-110 pointer-events-none transition-all duration-1000"
         style={{ backgroundImage: `url(${currentSong.cover})` }}
       />
       <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl" />
-      
+
       {/* The Visualizer Canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-0" />
 
       {/* Header */}
       <nav className="relative z-50 flex justify-between p-6 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        <button onClick={() => { document.exitFullscreen(); navigate("/"); }} 
-                className="flex items-center gap-2 text-[10px] tracking-widest uppercase hover:text-primary transition-all">
+        <button
+          onClick={() => {
+            document.exitFullscreen();
+            navigate("/");
+          }}
+          className="flex items-center gap-2 text-[10px] tracking-widest uppercase hover:text-primary transition-all"
+        >
           <ChevronLeft size={14} /> [ EXIT_PREVIEW ]
         </button>
         <div className="flex items-center gap-4 text-[10px] tracking-[0.3em] opacity-40 font-bold">
@@ -99,16 +101,16 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center">
         {/* Album Art */}
         <div className="mb-10 relative group">
-          <img 
-            src={currentSong.cover} 
-            className="w-40 h-40 lg:w-52 lg:h-52 rounded-2xl object-cover shadow-2xl ring-1 ring-white/20 transition-all duration-700" 
-            alt="Art" 
+          <img
+            src={currentSong.cover}
+            className="w-40 h-40 lg:w-52 lg:h-52 rounded-2xl object-cover shadow-2xl ring-1 ring-white/20 transition-all duration-700"
+            alt="Art"
           />
         </div>
 
         {/* Sliding Lyric Track */}
         <div className="relative h-[450px] w-full max-w-5xl overflow-hidden mask-fade-y">
-          <div 
+          <div
             className="absolute w-full transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
             style={{ transform: `translateY(${(currentIndex * -90) + 180}px)` }}
           >
@@ -117,8 +119,8 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
               return (
                 <div key={i} className="h-[90px] flex items-center justify-center">
                   <p className={`text-center transition-all duration-700 px-6 font-bold
-                    ${isActive 
-                      ? "text-3xl md:text-3xl opacity-100 scale-110 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" 
+                    ${isActive
+                      ? "text-3xl md:text-3xl opacity-100 scale-110 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                       : "text-xl md:text-2xl opacity-10 blur-[1.5px] scale-90"}`}
                   >
                     {line.text}

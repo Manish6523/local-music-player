@@ -1,8 +1,5 @@
-import { useMemo } from "react";
-// If user navigates to /preview and currentSong is null, redirect away.
-// We assume this panel may appear as part of routing.
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Play,
   Pause,
@@ -17,16 +14,10 @@ import {
   Clock,
   MoreHorizontal,
   X,
+  Activity,
+  Terminal,
 } from "lucide-react";
 import { MUSIC_NOTE_FALLBACK } from "./utils";
-/*
-  To make the RightPlayerPanel component itself vertically scrollable
-  (instead of only the queue having scroll), wrap the top-level content in a div:
-    className="h-full overflow-y-auto"
-  or similar at the top-level container of the component (not shown in import section).
-  IN THIS SELECTION: No code changes beyond imports are needed here,
-  but be sure to update container div in the main component render accordingly.
-*/
 
 const RightPlayerPanel = ({
   currentSong,
@@ -47,8 +38,6 @@ const RightPlayerPanel = ({
   currentSongIndex,
   onClose,
 }) => {
-
-
   const location = useLocation();
   if (location.pathname === "/preview") return <></>;
 
@@ -66,10 +55,8 @@ const RightPlayerPanel = ({
 
   const currentCover = currentSong?.cover || MUSIC_NOTE_FALLBACK;
 
-  // Calculate the index in the playback list for queue display
   const songIndexInList = useMemo(
-    () =>
-      currentPlaybackList.findIndex((song) => song.url === currentSong?.url),
+    () => currentPlaybackList.findIndex((song) => song.url === currentSong?.url),
     [currentPlaybackList, currentSong]
   );
 
@@ -77,237 +64,172 @@ const RightPlayerPanel = ({
     songIndexInList >= 0
       ? currentPlaybackList.slice(songIndexInList + 1)
       : currentPlaybackList;
-  const fallbackCover = MUSIC_NOTE_FALLBACK;
-
-  const handleQueueItemClick = (song, index) => {
-    if (playSong && currentPlaybackList) {
-      // Find the actual index in the current playback list
-      const actualIndex = currentPlaybackList.findIndex((s) => s.url === song.url);
-      if (actualIndex >= 0) {
-        playSong(currentPlaybackList, actualIndex);
-      }
-    }
-  };
 
   return (
-    <div className="w-full lg:w-96 h-full relative flex shrink-0 flex-col bg-background lg:bg-transparent">
-      {/* Enhanced Glass panel with gradient and stronger blur */}
-      <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl border-l border-white/10">
-        <div className="absolute inset-0 bg-card/20"></div>
+    <div className="w-full lg:w-96 h-full relative flex shrink-0 flex-col bg-background font-mono border-l border-white/10">
+      {/* Brutalist Glass Panel */}
+      <div className="absolute inset-0 bg-gradient-glass backdrop-blur-3xl">
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
-      {/* Close button for mobile */}
-      <div className="lg:hidden fixed z-20 flex justify-end p-3 right-0">
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
-          aria-label="Close panel"
-        >
-          <X size={24} className="cursor-pointer" />
+      {/* Mobile Close */}
+      <div className="lg:hidden fixed z-50 p-4 right-0">
+        <button onClick={onClose} className="p-2 bg-primary text-black border border-white/20 cursor-pointer">
+          <X size={20} />
         </button>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 p-4 md:p-6 flex flex-col space-y-4 md:space-y-6 h-full ">
-        {/* Player Section */}
+      <div className="relative z-10 p-5 flex flex-col h-full overflow-hidden">
+        {/* Technical Header */}
+        <div className="hidden md:flex items-center justify-between mb-6 opacity-40 text-[10px] tracking-[0.3em] uppercase border-b border-white/10 pb-2">
+          <span className="flex items-center gap-2"><Terminal size={12}/> AUDIO_OUTPUT</span>
+          <span className="flex items-center gap-2"><Activity size={12}/> {isPlaying ? 'ACTIVE' : 'IDLE'}</span>
+        </div>
+
         {currentSong ? (
-          <div className="flex flex-col text-white space-y-4 md:space-y-6 shrink-0">
-            {/* Cover with enhanced glass effect */}
+          <div className="flex flex-col space-y-6 shrink-0">
+            {/* Album Art: Brutalist Style */}
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-primary opacity-30 rounded-2xl blur-xl group-hover:opacity-50 transition-opacity duration-300"></div>
+              <div className="absolute -inset-1 bg-primary/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <img
                 src={currentCover}
-                alt="Cover"
-                className="relative w-full aspect-square rounded-2xl shadow-2xl shadow-primary/30 ring-1 ring-white/20"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = fallbackCover;
-                }}
+                alt="Manifest_Art"
+                className="relative w-full aspect-square object-cover border border-white/10 grayscale hover:grayscale-0 transition-all duration-700"
               />
-              <div className="absolute inset-0 rounded-2xl bg-linear-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute top-2 right-2 bg-black/80 border border-white/20 px-2 py-1 text-[9px] uppercase tracking-widest">
+                {currentSong.duration}
+              </div>
             </div>
 
-            <div className="text-center space-y-2">
-              <h2
-                className="text-xl md:text-2xl font-bold text-white wrap-break-words max-w-full"
-                style={{ maxWidth: "100%", width: "100%", display: "block" }}
-                title={currentSong.title}
-              >
-                {currentSong.title}
-              </h2>
-              <p className="text-xs md:text-sm text-white/70 truncate">
-                {currentSong.artist}
-              </p>
+            <div className="space-y-1">
+              <h2 className="text-lg font-black tracking-tighter uppercase truncate text-white">{currentSong.title}</h2>
+              <p className="text-[10px] text-primary uppercase tracking-[0.2em]">{currentSong.artist}</p>
             </div>
-            
 
-            {/* Progress Bar with enhanced glass styling */}
-            <div className="w-full space-y-2">
+            {/* Progress: Data Stream Style */}
+            <div className="space-y-2">
               <input
                 type="range"
                 min="0"
                 max={duration || 0}
                 value={currentTime}
                 onChange={handleProgressChange}
-                className="w-full h-2 appearance-none rounded-full bg-white/5 backdrop-blur-md cursor-pointer border border-white/10
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary 
-                  [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary/50
-                  [&::-webkit-slider-thumb]:ring-2 [&::-webkit-slider-thumb]:ring-white/30
-                  [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all
-                  [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:hover:shadow-xl"
+                className="w-full h-1 appearance-none bg-white cursor-pointer accent-primary"
                 style={{
-                  background: `linear-gradient(to right,
-                    hsl(var(--primary)) ${(currentTime / (duration || 1)) * 100}%,
-                    rgba(255, 255, 255, 0.05) ${(currentTime / (duration || 1)) * 100}%
-                  )`,
+                  background: `linear-gradient(to right, #e4ff0e ${(currentTime / (duration || 1)) * 100}%, rgba(255,255,255,0.1) 0%)`
                 }}
               />
-              <div className="flex justify-between text-xs text-white/70">
+              <div className="flex justify-between text-[10px] text-white/40 tabular-nums">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
             </div>
 
-            {/* Controls with enhanced glass buttons */}
-            <div className="flex items-center justify-center space-x-2 md:space-x-4">
+            {/* Controls: Brutalist Grid */}
+            <div className="grid grid-cols-5 gap-2">
               <button
                 onClick={toggleShuffle}
-                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${isShuffle
-                    ? "bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/20"
-                    : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
-                  }`}
+                className={`p-2 flex items-center justify-center border transition-all cursor-pointer ${
+                  isShuffle ? "bg-primary text-black border-primary" : "bg-white/5 text-white/40 border-white/10"
+                }`}
               >
-                <Shuffle size={18} className="md:w-5 md:h-5 cursor-pointer" />
+                <Shuffle size={14} />
               </button>
-
               <button
                 onClick={onPrev}
-                className="p-2 md:p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 hover:scale-105 hover:border-white/20 transition-all duration-300 shadow-lg"
+                className="p-2 flex items-center justify-center bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer"
               >
-                <SkipBack size={20} className="md:w-[22px] md:h-[22px] cursor-pointer" fill="currentColor" />
+                <SkipBack size={16} fill="currentColor" />
               </button>
-
               <button
                 onClick={onPlayPause}
-                className="w-12 h-12 md:w-16 md:h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/50 hover:shadow-3xl hover:shadow-primary/60 hover:scale-110 transition-all duration-300 ring-2 ring-white/20 backdrop-blur-xl"
+                className="p-2 flex items-center justify-center bg-primary text-black shadow-[4px_4px_0px_rgba(var(--primary),0.3)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer"
               >
-                {isPlaying ? (
-                  <Pause size={24} className="md:w-7 md:h-7 cursor-pointer" fill="currentColor" />
-                ) : (
-                  <Play size={24} className="md:w-7 md:h-7 cursor-pointer" fill="currentColor" />
-                )}
+                {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" />}
               </button>
-
               <button
                 onClick={onNext}
-                className="p-2 md:p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 hover:scale-105 hover:border-white/20 transition-all duration-300 shadow-lg"
+                className="p-2 flex items-center justify-center bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer"
               >
-                <SkipForward size={20} className="md:w-[22px] md:h-[22px] cursor-pointer" fill="currentColor" />
+                <SkipForward size={16} fill="currentColor" />
               </button>
-
               <button
                 onClick={toggleRepeat}
-                className={`p-2 rounded-full backdrop-blur-xl transition-all duration-300 border ${repeatMode !== "off"
-                    ? "bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/20"
-                    : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-white/10"
-                  }`}
+                className={`p-2 flex items-center justify-center border transition-all cursor-pointer ${
+                  repeatMode !== "off" ? "bg-primary text-black border-primary" : "bg-white/5 text-white/40 border-white/10"
+                }`}
               >
-                <Repeat size={18} className="md:w-5 md:h-5 cursor-pointer" />
+                <Repeat size={14} />
               </button>
             </div>
 
-            {/* Secondary controls with enhanced glass effect */}
-            <div className="flex items-center justify-between p-3 md:p-4 rounded-2xl bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-xl">
-              <div className="flex items-center gap-2 md:gap-3">
-                <button className="text-white/70 hover:text-white transition-colors">
-                  <Heart size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
-                </button>
-                <button className="text-white/70 hover:text-white transition-colors">
-                  <ListMusic size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
-                </button>
-                <button className="text-white/70 hover:text-white transition-colors">
-                  <Clock size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
-                </button>
-                <button className="text-white/70 hover:text-white transition-colors">
-                  <MoreHorizontal size={16} className="md:w-[18px] md:h-[18px] cursor-pointer" />
-                </button>
+            {/* Audio Manifest Settings */}
+            <div className="p-3 bg-white/5 border border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] uppercase tracking-widest text-white/30">Master_Volume</span>
+                <Volume2 size={12} className="text-primary" />
               </div>
-              <div className="flex items-center space-x-2">
-                <Volume2 size={16} className="md:w-[18px] md:h-[18px] text-white/70 cursor-pointer" />
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  defaultValue="1"
-                  onChange={(e) => {
-                    const vol = parseFloat(e.target.value);
-                    audioRef.current.volume = vol;
-                  }}
-                  className="w-20 h-1 appearance-none rounded-full bg-white/10 cursor-pointer border border-white/10
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary 
-                    [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-primary/30"
-                />
-              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                defaultValue="1"
+                onChange={(e) => (audioRef.current.volume = parseFloat(e.target.value))}
+                className="w-full h-[2px] appearance-none bg-white/10 accent-primary cursor-pointer"
+              />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-white/70 text-center space-y-4">
-            <div className="p-4 md:p-6 rounded-full bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-2xl">
-              <Music size={40} className="md:w-12 md:h-12 cursor-pointer" />
-            </div>
-            <div>
-              <p className="text-base md:text-lg font-semibold text-white">No song selected</p>
-              <p className="text-xs md:text-sm text-white/70">Load music to start playing</p>
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center opacity-20 italic text-[10px] tracking-widest uppercase">
+            [ No_Data_Source_Loaded ]
           </div>
         )}
 
-        {/* Queue Section with enhanced glass effect */}
-        <div className="border-t border-white/10 pt-4 md:pt-6 flex flex-col min-h-0 flex-1 overflow-hidden">
-          <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white shrink-0">Up Next</h3>
-          <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+        {/* Queue: The Manifest Stream */}
+        <div className="mt-8 flex-1 flex flex-col min-h-0">
+          <div className="flex items-center gap-3 mb-4">
+            <h3 className="text-[10px] font-bold tracking-[0.4em] uppercase text-primary">/ Up_Next</h3>
+            <div className="h-px grow bg-white/10"></div>
+          </div>
+          <div className="space-y-1 overflow-y-auto custom-scrollbar pr-2">
             {upNext.length > 0 ? (
               upNext.slice(0, 20).map((song, index) => {
                 // Calculate the actual index in the full playback list
                 const actualIndex = currentPlaybackList.findIndex((s) => s.url === song.url);
                 return (
                   <div
-                    key={`${song.url}-${index}`}
-                    onClick={() => handleQueueItemClick(song, actualIndex)}
-                    className="flex items-center space-x-2 md:space-x-3 p-2 md:p-3 rounded-xl hover:bg-white/5 backdrop-blur-xl transition-all duration-200 cursor-pointer group border border-transparent hover:border-white/10 hover:shadow-lg"
+                    key={index} // Changed from idx to index to match the map argument
+                    onClick={() => playSong(currentPlaybackList, actualIndex)}
+                    className="grid grid-cols-[32px_1fr_40px] items-center p-2 border border-transparent hover:border-white/10 hover:bg-white/5 transition-all cursor-pointer group"
                   >
-                    <img
-                      src={song.cover || fallbackCover}
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-lg ring-1 ring-white/20 shadow-md shrink-0"
-                      onError={(e) => (e.target.src = fallbackCover)}
-                      alt="cover"
-                    />
-                    <div className="truncate grow min-w-0">
-                      <p className="text-xs md:text-sm text-white group-hover:text-primary transition-colors truncate">
-                        {song.title.length > 30 
-                          ? song.title.split(" ").slice(0,3).join(" ") 
-                          : song.title}
+                    <span className="text-[9px] text-white/20 font-bold group-hover:text-primary transition-colors">
+                      {(index + 1) < 10 ? `0${index + 1}` : index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase truncate text-white/60 group-hover:text-white transition-colors">
+                        {song.title}
                       </p>
-                      <p className="text-[10px] md:text-xs text-white/70 truncate">{song.artist}</p>
+                      <p className="text-[8px] uppercase tracking-tighter text-white/20">{song.artist}</p>
                     </div>
-                    <span className="text-[10px] md:text-xs text-white/70 shrink-0">{song.duration}</span>
+                    <span className="text-[8px] text-white/20 text-right">{song.duration}</span>
                   </div>
                 );
               })
             ) : (
-              <div className="text-center p-6 md:p-8 rounded-xl bg-gradient-glass backdrop-blur-xl border border-white/10 shadow-lg">
-                <p className="text-xs md:text-sm text-white/70">Queue is empty</p>
+              <div className="text-[10px] uppercase text-white/10 py-4 text-center border border-dashed border-white/5">
+                End_of_Stream
               </div>
             )}
           </div>
         </div>
       </div>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+      `}</style>
     </div>
   );
 };
 
 export default RightPlayerPanel;
-

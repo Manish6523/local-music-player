@@ -1,21 +1,19 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, Disc3, Maximize, Minimize, Search, X } from "lucide-react";
+import { Plus, Disc3, Maximize, Minimize, Search, X, Terminal, Activity, Eye } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 
-// Improved, cleaner SearchBar
-function SearchBar({ allSongs, playSong, selectPlaylist, playlists, navigate, location }) {
+// Technical Search Manifest
+function SearchBar({ allSongs, playSong, selectPlaylist, playlists }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [focus, setFocus] = useState(false);
   const containerRef = useRef(null);
 
-  // Debounce user input
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 180);
     return () => clearTimeout(t);
   }, [query]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!focus) return;
     const handle = (e) => {
@@ -38,75 +36,58 @@ function SearchBar({ allSongs, playSong, selectPlaylist, playlists, navigate, lo
     let playlistName = song.album || "My Songs";
     if (!playlists?.[playlistName]) playlistName = "My Songs";
     selectPlaylist?.(playlistName);
-    if (playSong && playlists && playlists[playlistName]) {
+    if (playSong && playlists?.[playlistName]) {
       const idx = playlists[playlistName].findIndex(s => s.url === song.url);
       if (idx !== -1) playSong(playlists[playlistName], idx);
     }
     setQuery("");
-    setDebounced("");
     setFocus(false);
   };
 
   return (
-    <div
-      className="flex-1 min-w-0 flex justify-center px-1 relative"
-      ref={containerRef}
-      style={{ zIndex: 50 }}
-    >
-      <div className="w-full max-w-[200px] sm:max-w-[290px] md:max-w-[400px]">
-        <div className="relative flex items-center w-full">
-          <span className="absolute left-2 z-10 top-1/2 -translate-y-1/2 text-white/40">
-            <Search size={16} />
-          </span>
+    <div className="flex-1 flex justify-center px-4 relative font-mono" ref={containerRef}>
+      <div className="w-full max-w-[400px] relative">
+        <div className="relative flex items-center group">
+          <Search size={14} className="absolute left-3 text-primary/50 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onFocus={() => setFocus(true)}
-            placeholder="Search music..."
-            className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-8 py-1.5 text-[0.93rem] focus:ring-2 focus:ring-primary/30 text-white placeholder-white/40 outline-none transition-all duration-150 min-w-0 shadow-sm"
-            style={{ minWidth: 0 }}
-            aria-label="Search music"
-            autoComplete="off"
+            placeholder="SEARCH_DB..."
+            className="w-full bg-white/5 border border-white/10 px-10 py-2 text-[0.8rem] tracking-widest uppercase focus:border-primary/50 text-white placeholder-white/20 outline-none transition-all shadow-inner"
           />
           {query && (
-            <button
-              onClick={() => { setQuery(""); setDebounced(""); setFocus(false); }}
-              className="absolute right-1 cursor-pointer top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
-              tabIndex={-1}
-              aria-label="Clear"
-              type="button"
-            >
-              <X size={17} />
+            <button onClick={() => setQuery("")} className="absolute right-3 text-white/30 hover:text-white">
+              <X size={14} />
             </button>
           )}
         </div>
-        {/* Dropdown */}
-        {focus && (results.length > 0 || (debounced.trim() && results.length === 0)) && (
-          <div className="absolute left-0 right-0 mt-3 top-[120%] z-40 bg-gradient-glass backdrop-blur-xl rounded-xl border border-white/10 shadow-xl max-h-64 overflow-y-auto custom-scrollbar p-1.5">
+
+        {/* Technical Dropdown */}
+        {focus && (debounced.trim()) && (
+          <div className="absolute left-0 right-0 mt-2 z-[100] bg-black border border-white/10 shadow-[8px_8px_0px_rgba(0,0,0,0.5)] backdrop-blur-3xl overflow-hidden">
+            <div className="bg-white/5 px-3 py-1 border-b border-white/10 flex justify-between items-center">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-white/40">Query_Results</span>
+              <span className="text-[9px] text-primary font-bold">FOUND: {results.length}</span>
+            </div>
             {results.length > 0 ? (
               results.map((song, idx) => (
                 <div
                   key={idx}
                   onClick={() => handleClick(song)}
-                  tabIndex={0}
-                  className="flex items-center gap-3 px-2 py-2 hover:bg-white/10 rounded-lg cursor-pointer transition"
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-primary/10 border-b border-white/5 last:border-none cursor-pointer group transition-all"
                 >
-                  <img
-                    src={song.cover}
-                    alt={song.title}
-                    className="w-8 h-8 object-cover rounded shadow-sm border border-white/10 bg-white/10 shrink-0"
-                    onError={e => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E"}
-                  />
+                  <img src={song.cover} className="w-8 h-8 object-cover grayscale group-hover:grayscale-0 border border-white/10" alt="" />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-white truncate">{song.title}</span>
-                    <span className="block text-[0.7rem] text-white/60 truncate">{song.artist || "Unknown Artist"}</span>
+                    <p className="text-[10px] font-bold text-white uppercase truncate">{song.title}</p>
+                    <p className="text-[8px] text-white/40 uppercase truncate tracking-tighter">{song.artist}</p>
                   </div>
-                  <span className="ml-1 text-[0.74rem] text-white/40">{song.duration}</span>
+                  <span className="text-[9px] text-primary/40 font-bold tracking-tighter">{song.duration}</span>
                 </div>
               ))
             ) : (
-              <div className="px-4 py-5 text-center text-xs text-white/70">No songs found</div>
+              <div className="p-6 text-center text-[10px] uppercase tracking-widest text-white/20">Null_Pointer_Exception: No_Results</div>
             )}
           </div>
         )}
@@ -117,117 +98,62 @@ function SearchBar({ allSongs, playSong, selectPlaylist, playlists, navigate, lo
 
 const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled, allSongs, playSong, selectPlaylist, playlists }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isFullScreen, setIsFullscreen] = useState(
-    !!(typeof document !== "undefined" && document.fullscreenElement)
-  );
+  const [isFullScreen, setIsFullscreen] = useState(!!(typeof document !== "undefined" && document.fullscreenElement));
 
-  // Listen for fullscreen change
   useEffect(() => {
-    function handleFullScreenChange() {
-      setIsFullscreen(!!document.fullscreenElement);
-    }
-    document.addEventListener("fullscreenchange", handleFullScreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullScreenChange);
+    const handle = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handle);
+    return () => document.removeEventListener("fullscreenchange", handle);
   }, []);
 
-  // useEffect(()=>{
-  //   isFullScreen ? navigate('/preview') : navigate('/')
-  // },[isFullScreen])
-
-  // Fullscreen handler
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      const el = document.getElementById("root") || document.querySelector("#root") || document.body;
+      const el = document.documentElement;
       if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
     } else {
       if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-      else if (document.msExitFullscreen) document.msExitFullscreen();
     }
   };
 
   return (
-    <nav
-      className={`
-        h-14 md:h-16 flex items-center sticky justify-between  top-2 z-30
-        transition-all duration-300 rounded-2xl
-        ${isScrolled ? "bg-gradient-glass backdrop-blur-xl shadow-xl" : ""}
-      `}
-      style={{ minHeight: "52px" }}
-    >
-      {/* Left: Logo */}
-      <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
-        <button
-          onClick={() => navigate("/preview")}
-          className="flex items-center space-x-2 md:space-x-3 group focus:outline-none"
-          aria-label="Home"
-        >
-          <div className="rounded-xl md:rounded-2xl bg-gradient-primary flex items-center justify-center p-1.5 md:p-2">
-            <img src="/logo.svg" alt="logo" className="md:w-10 w-8" draggable="false" />
-          </div>
-          <span className="text-lg hidden md:inline font-bold text-white group-hover:text-primary transition-colors tracking-wide drop-shadow-sm">
-            Golden Wind
-          </span>
+    <nav className={`h-16 flex items-center sticky top-0 z-50 md:px-6 transition-all border-b border-transparent font-mono ${isScrolled ? "bg-black/60 backdrop-blur-xl border-white/5" : ""}`}>
+      
+      {/* System Brand */}
+      <div className="flex items-center gap-4 shrink-0">
+        <button onClick={() => navigate("/")} className="group relative">
+           <div className="absolute -inset-2 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+           <img src="/logo.svg" alt="logo" className="w-9 grayscale group-hover:grayscale-0 transition-all" />
         </button>
+        <div className="hidden lg:block border-l border-white/10 pl-4">
+           <p className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">Golden_Wind</p>
+           <p className="text-[8px] tracking-[0.2em] text-white/30 uppercase mt-0.5">Capability_Manifest_v3.0</p>
+        </div>
       </div>
 
-      {/* Center: Responsive SearchBar */}
-      <SearchBar
-        allSongs={allSongs}
-        playSong={playSong}
-        selectPlaylist={selectPlaylist}
-        playlists={playlists}
-        navigate={navigate}
-        location={location}
-      />
+      <SearchBar allSongs={allSongs} playSong={playSong} selectPlaylist={selectPlaylist} playlists={playlists} />
 
-      {/* Right: Controls */}
-      <div className="flex items-center gap-1 sm:gap-2">
-        <label
-          className="relative group cursor-pointer"
-          tabIndex={0}
-          aria-label="Add Folder"
-        >
-          <div
-            className="p-1.5 md:p-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/15 transition-all duration-200 shadow-sm"
-          >
-            <Plus size={21} />
-          </div>
-          <input
-            type="file"
-            webkitdirectory="true"
-            directory="true"
-            multiple
-            onChange={onFolderSelect}
-            className="hidden"
-            tabIndex={-1}
-            aria-label="Choose Folder"
-          />
+      {/* System Actions */}
+      <div className="flex items-center gap-2">
+        
+
+        <label className="p-2 cursor-pointer bg-white/5 border border-white/10 hover:border-primary/50 text-white/60 hover:text-white transition-all">
+          <Plus size={18} />
+          <input type="file" webkitdirectory="true" directory="true" multiple onChange={onFolderSelect} className="hidden" />
         </label>
-        {/* Fullscreen button */}
-        <button
-          onClick={toggleFullScreen}
-          className="p-1.5 md:p-2 rounded-lg cursor-pointer bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/15 transition-all duration-200 shadow-sm"
-          aria-label="Toggle Fullscreen"
-        >
-          {isFullScreen ? (
-            <Minimize size={21} className="text-white" />
-          ) : (
-            <Maximize size={21} className="text-white" />
-          )}
+
+        <button onClick={toggleFullScreen} className="p-2 cursor-pointer bg-white/5 border border-white/10 hover:border-primary/50 text-white/60 hover:text-white transition-all">
+          {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
         </button>
-        {/* Mobile: Right panel hamburger */}
+
         <button
-          onClick={onToggleRightPanel}
-          className="lg:hidden p-1.5 md:p-2 rounded-lg bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/15 transition-all duration-200 shadow-sm flex items-center"
-          aria-label="Toggle player panel"
+          onClick={() => navigate('/preview')}
+          className="p-2 cursor-pointer bg-white/5 border border-white/10 hover:border-primary/50 text-white/60 hover:text-white transition-all"
         >
-          <Disc3 size={21} className="text-white animate-spin-slow" />
+          <Eye size={18} />
+        </button>
+
+        <button onClick={onToggleRightPanel} className="lg:hidden p-2 p-2 cursor-pointer bg-white/5 border border-white/10 hover:border-primary/50 text-white/60 hover:text-white transition-all">
+          <Disc3 size={18} className="animate-spin-slow" />
         </button>
       </div>
     </nav>
