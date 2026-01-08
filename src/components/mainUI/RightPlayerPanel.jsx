@@ -74,7 +74,7 @@ const RightPlayerPanel = ({
 
       {/* Mobile Close */}
       <div className="lg:hidden fixed z-50 p-4 right-0">
-        <button onClick={onClose} className="p-2 bg-primary text-black border border-white/20 cursor-pointer">
+        <button onClick={onClose} className="p-2 bg-white/50 text-black border border-white/20 cursor-pointer">
           <X size={20} />
         </button>
       </div>
@@ -96,7 +96,7 @@ const RightPlayerPanel = ({
                 alt="Manifest_Art"
                 className="relative w-full aspect-square object-cover border border-white/10 grayscale hover:grayscale-0 transition-all duration-700"
               />
-              <div className="absolute top-2 right-2 bg-black/80 border border-white/20 px-2 py-1 text-[9px] uppercase tracking-widest">
+              <div className="absolute bottom-2 right-2 bg-black/80 border border-white/20 px-2 py-1 text-[9px] uppercase tracking-widest">
                 {currentSong.duration}
               </div>
             </div>

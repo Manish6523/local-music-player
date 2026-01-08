@@ -36,6 +36,19 @@ const isPageFullScreen = () => {
   );
 };
 
+// Simple debounce utility
+function debounce(func, wait) {
+  let timeout;
+  function debounced(...args) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }
+  debounced.cancel = () => {
+    if (timeout) clearTimeout(timeout);
+  };
+  return debounced;
+}
+
 // Main App Component
 const App = () => {
   const navigate = useNavigate();
@@ -67,21 +80,20 @@ const App = () => {
   const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
   const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
 
-  useEffect(() => {
-    if (!currentPlayingSong) {
-      setCurrentLyrics([]);
-      return;
-    }
+  // --- Debounced fetch for lyrics ---
+  // We'll use a ref to keep the debounce instance persistent across re-renders.
+  const debouncedFetchRef = useRef();
 
-    const fetchGlobalLyrics = async () => {
+  // Debounced function is created only once
+  useEffect(() => {
+    // This will let us swap setCurrentLyrics/setIsLyricsFetching on each call, via closure
+    debouncedFetchRef.current = debounce(async ({ song, setCurrentLyrics, setIsLyricsFetching }) => {
       setIsLyricsFetching(true);
       try {
-        const query = encodeURIComponent(
-          `${currentPlayingSong.title} ${currentPlayingSong.artist}`
-        );
+        const query = encodeURIComponent(`${song.title} ${song.artist}`);
         const res = await fetch(`https://lrclib.net/api/search?q=${query}`);
         const data = await res.json();
-        
+
         if (data.length > 0 && data[0].syncedLyrics) {
           const lines = data[0].syncedLyrics.split('\n').map(line => {
             const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
@@ -99,9 +111,32 @@ const App = () => {
       } finally {
         setIsLyricsFetching(false);
       }
+    }, 450); // 450ms debounce
+    return () => {
+      if (debouncedFetchRef.current && debouncedFetchRef.current.cancel) {
+        debouncedFetchRef.current.cancel();
+      }
     };
+  }, []);
 
-    fetchGlobalLyrics();
+  useEffect(() => {
+    if (!currentPlayingSong) {
+      setCurrentLyrics([]);
+      if (debouncedFetchRef.current && debouncedFetchRef.current.cancel) {
+        debouncedFetchRef.current.cancel();
+      }
+      setIsLyricsFetching(false);
+      return;
+    }
+    // Use debounce for API call
+    if (debouncedFetchRef.current) {
+      debouncedFetchRef.current({
+        song: currentPlayingSong,
+        setCurrentLyrics,
+        setIsLyricsFetching,
+      });
+    }
+  // We do not want to rerun on debounce function change, just on song change
   }, [currentPlayingSong]);
 
   // Collect all songs from all playlists for search

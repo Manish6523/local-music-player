@@ -86,14 +86,14 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
       <nav className="relative z-50 flex justify-between p-6 border-b border-white/10 bg-white/5 backdrop-blur-xl">
         <button
           onClick={() => {
-            document.exitFullscreen();
+            // document.exitFullscreen();
             navigate("/");
           }}
           className="flex items-center gap-2 text-[10px] tracking-widest uppercase hover:text-primary transition-all"
         >
           <ChevronLeft size={14} /> [ EXIT_PREVIEW ]
         </button>
-        <div className="flex items-center gap-4 text-[10px] tracking-[0.3em] opacity-40 font-bold">
+        <div className="hidden md:flex items-center gap-4 text-[10px] tracking-[0.3em] opacity-40 font-bold">
           <Activity size={14} className="text-primary" /> VISUALIZER_ACTIVE: TRUE
         </div>
       </nav>
