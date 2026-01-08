@@ -89,7 +89,7 @@ const Preview = ({ currentSong, audioRef, currentTime, isPlaying, lyrics, isFetc
             // document.exitFullscreen();
             navigate("/");
           }}
-          className="flex items-center gap-2 text-[10px] tracking-widest uppercase hover:text-primary transition-all"
+          className="flex cursor-pointer items-center gap-2 text-[10px] tracking-widest uppercase hover:text-primary transition-all"
         >
           <ChevronLeft size={14} /> [ EXIT_PREVIEW ]
         </button>
