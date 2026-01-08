@@ -11,6 +11,7 @@ import {
   Route,
   useNavigate,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import { parseBlob } from "music-metadata-browser";
 import RightPlayerPanel from "./components/mainUI/RightPlayerPanel";
@@ -19,8 +20,21 @@ import Home from "./components/mainUI/Home";
 import PlayerPage from "./components/mainUI/PlayerPage";
 import { generateSvgCover } from "./components/mainUI/utils";
 import { Disc3 } from "lucide-react";
+import Preview from "./components/mainUI/Preview";
 
 window.Buffer = Buffer;
+
+// Helper to determine if the page is in full screen
+const isPageFullScreen = () => {
+  // Standard and vendor-prefixed full screen detection
+  if (typeof document === "undefined") return false;
+  return (
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement
+  );
+};
 
 // Main App Component
 const App = () => {
@@ -38,6 +52,9 @@ const App = () => {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
 
+  const [currentLyrics, setCurrentLyrics] = useState([]);
+  const [isLyricsFetching, setIsLyricsFetching] = useState(false);
+
   const audioRef = useRef(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -49,6 +66,45 @@ const App = () => {
   const playlistNames = Object.keys(playlists);
   const currentSongListOriginal = playlists[currentPlaylistName || ""] || [];
   const currentPlaylistIndex = playlistNames.indexOf(currentPlaylistName || "");
+
+  useEffect(() => {
+    if (!currentPlayingSong) {
+      setCurrentLyrics([]);
+      return;
+    }
+
+    const fetchGlobalLyrics = async () => {
+      setIsLyricsFetching(true);
+      // We don't clear immediately to keep the old ones during "Searching..." 
+      // unless you prefer a clean slate.
+      try {
+        const query = encodeURIComponent(
+          `${currentPlayingSong.title} ${currentPlayingSong.artist}`
+        );
+        const res = await fetch(`https://lrclib.net/api/search?q=${query}`);
+        const data = await res.json();
+        
+        if (data.length > 0 && data[0].syncedLyrics) {
+          const lines = data[0].syncedLyrics.split('\n').map(line => {
+            const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
+            return match 
+              ? { time: parseInt(match[1]) * 60 + parseFloat(match[2]), text: match[3].trim() } 
+              : null;
+          }).filter(l => l && l.text);
+          setCurrentLyrics(lines);
+        } else {
+          setCurrentLyrics([]);
+        }
+      } catch (err) {
+        console.error("Global lyrics fetch error:", err);
+        setCurrentLyrics([]);
+      } finally {
+        setIsLyricsFetching(false);
+      }
+    };
+
+    fetchGlobalLyrics();
+  }, [currentPlayingSong]); // Runs every time the song changes
 
   // Collect all songs from all playlists for search
   const allSongs = useMemo(() => {
@@ -453,9 +509,19 @@ const App = () => {
       const firstPlaylistName = Object.keys(tempPlaylists)[0];
       setCurrentPlaylistName(firstPlaylistName);
       setCurrentSongIndex(0);
-      navigate("/");
+
+      // Custom logic: go to /preview if fullscreen, otherwise home
+      if (isPageFullScreen()) {
+        navigate("/preview");
+      } else {
+        navigate("/");
+      }
     } else {
-      navigate("/");
+      if (isPageFullScreen()) {
+        navigate("/preview");
+      } else {
+        navigate("/");
+      }
     }
     
     setIsLoadingSongs(false);
@@ -586,6 +652,41 @@ const App = () => {
       ? currentPlayingSong.cover
       : "/background01.jpg";
 
+  // Custom redirect logic: force /preview in fullscreen, / otherwise.
+  // But only redirect when the path does not match the fullscreen state.
+  // This effect will keep things in sync if user presses F11 or exits full screen.
+
+  useEffect(() => {
+    // Only redirect if not already on the right page:
+    const isFull = isPageFullScreen();
+    // For precision: Only run if path doesn't match full screen status
+    if (isFull && location.pathname !== "/preview") {
+      navigate("/preview", { replace: true });
+    } else if (!isFull && location.pathname === "/preview") {
+      navigate("/", { replace: true });
+    }
+    // Watch full screen changes and location
+  }, [location, navigate]);
+
+  // Listen for fullscreen change events and force rerender (to trigger redirect logic above)
+  useEffect(() => {
+    const recheck = () => {
+      // Use location.state so rerender triggers useEffect above
+      navigate(location.pathname, { replace: true, state: { fullScreenSync: Math.random() } });
+    };
+    document.addEventListener("fullscreenchange", recheck);
+    document.addEventListener("webkitfullscreenchange", recheck);
+    document.addEventListener("mozfullscreenchange", recheck);
+    document.addEventListener("MSFullscreenChange", recheck);
+    return () => {
+      document.removeEventListener("fullscreenchange", recheck);
+      document.removeEventListener("webkitfullscreenchange", recheck);
+      document.removeEventListener("mozfullscreenchange", recheck);
+      document.removeEventListener("MSFullscreenChange", recheck);
+    };
+    // Must depend on navigate and location.pathname
+  }, [navigate, location.pathname]);
+
   return (
     <div className="flex h-screen bg-background text-white overflow-hidden relative">
       {/* Loading overlay */}
@@ -619,7 +720,6 @@ const App = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row grow min-w-0 relative z-10">
-
         {/* <Navbar
           isScrolled={isScrolled}
           onFolderSelect={handleFolderSelect}
@@ -677,6 +777,20 @@ const App = () => {
                     <h1 className="text-2xl md:text-4xl font-bold text-white">404 Not Found</h1>
                   </div>
                 </div>
+              }
+            />
+            <Route
+              path="/preview"
+              element={
+                <Preview
+                currentSong={currentPlayingSong}
+                audioRef={audioRef}
+                currentTime={currentTime}
+                isPlaying={isPlaying}
+                // NEW: Pass pre-fetched lyrics and status
+                lyrics={currentLyrics}
+                isFetching={isLyricsFetching}
+                />
               }
             />
           </Routes>

@@ -1,4 +1,8 @@
 import { useMemo } from "react";
+// If user navigates to /preview and currentSong is null, redirect away.
+// We assume this panel may appear as part of routing.
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Play,
   Pause,
@@ -43,6 +47,11 @@ const RightPlayerPanel = ({
   currentSongIndex,
   onClose,
 }) => {
+
+
+  const location = useLocation();
+  if (location.pathname === "/preview") return <></>;
+
   const formatTime = (seconds) => {
     if (isNaN(seconds) || seconds === 0) return "0:00";
     const minutes = Math.floor(seconds / 60);
@@ -78,9 +87,6 @@ const RightPlayerPanel = ({
         playSong(currentPlaybackList, actualIndex);
       }
     }
-    // if (onClose) {
-    //   onClose();
-    // }
   };
 
   return (

@@ -131,6 +131,10 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled, allSongs, play
     return () => document.removeEventListener("fullscreenchange", handleFullScreenChange);
   }, []);
 
+  // useEffect(()=>{
+  //   isFullScreen ? navigate('/preview') : navigate('/')
+  // },[isFullScreen])
+
   // Fullscreen handler
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -159,7 +163,7 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled, allSongs, play
       {/* Left: Logo */}
       <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/preview")}
           className="flex items-center space-x-2 md:space-x-3 group focus:outline-none"
           aria-label="Home"
         >
