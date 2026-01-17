@@ -94,7 +94,7 @@ const RightPlayerPanel = ({
               <img
                 src={currentCover}
                 alt="Manifest_Art"
-                className="relative w-full aspect-square object-cover border border-white/10 grayscale hover:grayscale-0 transition-all duration-700"
+                className="relative w-full aspect-square object-cover border border-white/10 grayscale-0hover:grayscale-0 transition-all duration-700"
               />
               <div className="absolute bottom-2 right-2 bg-black/80 border border-white/20 px-2 py-1 text-[9px] uppercase tracking-widest">
                 {currentSong.duration}

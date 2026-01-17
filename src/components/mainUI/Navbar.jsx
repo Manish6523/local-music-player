@@ -78,7 +78,7 @@ function SearchBar({ allSongs, playSong, selectPlaylist, playlists }) {
                   onClick={() => handleClick(song)}
                   className="flex items-center gap-3 px-3 py-2 hover:bg-primary/10 border-b border-white/5 last:border-none cursor-pointer group transition-all"
                 >
-                  <img src={song.cover} className="w-8 h-8 object-cover grayscale group-hover:grayscale-0 border border-white/10" alt="" />
+                  <img src={song.cover} className="w-8 h-8 object-cover grayscale-0group-hover:grayscale-0 border border-white/10" alt="" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-bold text-white uppercase truncate">{song.title}</p>
                     <p className="text-[8px] text-white/40 uppercase truncate tracking-tighter">{song.artist}</p>
@@ -122,7 +122,7 @@ const Navbar = ({ onFolderSelect, onToggleRightPanel, isScrolled, allSongs, play
       <div className="flex items-center gap-4 shrink-0">
         <button onClick={() => navigate("/")} className="group relative">
            <div className="absolute -inset-2 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-           <img src="/logo.svg" alt="logo" className="w-9 grayscale group-hover:grayscale-0 transition-all" />
+           <img src="/logo.svg" alt="logo" className="w-9 grayscale-0group-hover:grayscale-0 transition-all" />
         </button>
         <div className="hidden lg:block border-l border-white/10 pl-4">
            <p className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">Golden_Wind</p>

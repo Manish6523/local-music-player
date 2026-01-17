@@ -81,7 +81,7 @@ const Home = ({
                       <div className="aspect-square mb-4 overflow-hidden border border-white/10 bg-white/5 relative shadow-2xl group-hover:border-primary/50 transition-all">
                         <img 
                           src={cover} 
-                          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} 
+                          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isActive ? 'grayscale-0' : 'grayscale-0group-hover:grayscale-0'}`} 
                           alt="" 
                         />
                         {isActive && (
@@ -137,7 +137,7 @@ const Home = ({
                       </span>
                       
                       <div className="flex items-center gap-4 min-w-0">
-                        <img src={song.cover} className={`w-8 h-8 object-cover border border-white/10 ${isCurrent ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} alt="" />
+                        <img src={song.cover} className={`w-8 h-8 object-cover border border-white/10 ${isCurrent ? 'grayscale-0' : 'grayscale-0group-hover:grayscale-0'}`} alt="" />
                         <div className="truncate">
                           <p className={`text-xs font-bold uppercase truncate ${isCurrent ? 'text-primary' : 'text-white'}`}>{song.title}</p>
                           <p className="text-[10px] text-white/40 uppercase truncate tracking-tighter">{song.artist || "Unknown_Entity"}</p>

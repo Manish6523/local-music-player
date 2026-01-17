@@ -118,7 +118,7 @@ const PlayerPage = ({
             <img 
               src={mainCover} 
               alt="Art" 
-              className="w-48 h-48 md:w-64 md:h-64 object-cover border border-white/20 shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-700" 
+              className="w-48 h-48 md:w-64 md:h-64 object-cover border border-white/20 shadow-2xl grayscale-0group-hover:grayscale-0 transition-all duration-700" 
             />
             <div className="absolute -bottom-2 -left-2 bg-primary text-black px-3 py-1 text-sm font-bold tracking-widest uppercase">
               Directory_Verified
@@ -178,7 +178,7 @@ const PlayerPage = ({
                   <div className="flex items-center gap-4 min-w-0">
                     <img 
                       src={song.cover} 
-                      className={`size-12 object-cover border border-white/10 ${isCurrent ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} 
+                      className={`size-12 object-cover border border-white/10 ${isCurrent ? 'grayscale-0' : 'grayscale-0group-hover:grayscale-0'}`} 
                       alt="" 
                     />
                     <div className="truncate">
